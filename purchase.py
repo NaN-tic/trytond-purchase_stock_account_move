@@ -18,21 +18,26 @@ class Purchase:
     def __setup__(cls):
         super(Purchase, cls).__setup__()
         cls._error_messages.update({
-                'no_pending_invoice_account': 'There is no Pending Invoice '
-                'Account Defined. Please define one in purchase configuration.',
-            })
+                'no_pending_invoice_account': ('There is no Pending Invoice '
+                    'Account Defined. Please define one in purchase '
+                    'configuration.'),
+                })
 
     @classmethod
     def process(cls, purchases):
         super(Purchase, cls).process(purchases)
         for purchase in purchases:
             if purchase.invoice_method not in ['manual', 'order']:
-                with Transaction().set_user(0, set_context=True):
+                if Transaction().user:
+                    with Transaction().set_user(0, set_context=True):
+                        purchase.create_account_move()
+                        purchase.reconcile_moves()
+                else:
                     purchase.create_account_move()
                     purchase.reconcile_moves()
 
     def create_account_move(self):
-        " Creates account move for not invoiced shipments "
+        "Creates account move for not invoiced shipments"
         pool = Pool()
         Move = pool.get('account.move')
         Config = pool.get('purchase.configuration')
