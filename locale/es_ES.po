@@ -7,7 +7,7 @@ msgid ""
 "There is no Pending Invoice Account Defined. Please define one in purchase "
 "configuration."
 msgstr ""
-"No se ha encontrado una cuenta de facturas pendientes. Por favor, deinfa una"
+"No se ha encontrado una cuenta de facturas pendientes. Por favor, defina una"
 " en al configuración de compras."
 
 msgctxt "field:account.invoice.line,pending_in_invoice_account:"
