@@ -63,7 +63,7 @@ class ConfigurationCompany(ModelSQL):
     company = fields.Many2One('company.company', 'Company', required=True,
         ondelete='CASCADE', select=True)
     pending_invoice_account = fields.Many2One('account.account',
-        'Pending Invoice Account', required=True,
+        'Pending Invoice Account',
             domain=[
                 ('kind', '=', 'payable'),
                 ])
