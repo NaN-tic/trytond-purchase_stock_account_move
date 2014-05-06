@@ -10,7 +10,6 @@ def register():
         Configuration,
         ConfigurationCompany,
         Purchase,
-        PurchaseLine,
-        InvoiceLine,
         Move,
+        Line,
         module='purchase_stock_account_move', type_='model')
