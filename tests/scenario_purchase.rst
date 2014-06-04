@@ -395,9 +395,9 @@ Open supplier invoices::
 
     >>> config.user = purchase_user.id
     >>> purchase.reload()
-    >>> Invoice = Model.get('account.invoice')
     >>> invoice1, invoice2 = purchase.invoices
     >>> config.user = account_user.id
+    >>> Invoice = Model.get('account.invoice')
     >>> invoice1.invoice_date = today
     >>> invoice1.save()
     >>> Invoice.post([invoice1.id], config.context)
@@ -422,6 +422,7 @@ Open supplier invoices::
     >>> invoice2.invoice_date = today
     >>> invoice2.save()
     >>> Invoice.post([invoice2.id], config.context)
+    >>> AccountMoveLine = Model.get('account.move.line')
     >>> account_moves = AccountMoveLine.find([
     ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
     ...     ('account', '=', pending_payable.id),
