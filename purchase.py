@@ -144,7 +144,7 @@ class Purchase:
         return ret
 
     def _get_shipment_amount(self):
-        "Return the ttoal shipped amount"
+        "Return the total shipped amount"
         pool = Pool()
         Currency = pool.get('currency.currency')
         amount = _ZERO
@@ -154,7 +154,7 @@ class Purchase:
         return amount
 
     def _get_accounting_amount(self):
-        " Returns the amount in accounting for this purchase"
+        "Returns the amount in accounting for this purchase"
         pool = Pool()
         Line = pool.get('account.move.line')
         Config = pool.get('purchase.configuration')
@@ -193,7 +193,6 @@ class Purchase:
     def _get_accounting_journal(self):
         pool = Pool()
         Journal = pool.get('account.journal')
-
         journals = Journal.search([
                 ('type', '=', 'expense'),
                 ], limit=1)
@@ -204,7 +203,7 @@ class Purchase:
         return journal
 
     def _get_account_move(self):
-        " Return the move object to create "
+        "Return the move object to create"
         pool = Pool()
         Move = pool.get('account.move')
         Date = pool.get('ir.date')
@@ -212,6 +211,7 @@ class Purchase:
 
         accounting_date = Date().today()
         period_id = Period.find(self.company.id, date=accounting_date)
+
         lines = self._get_account_move_lines()
         if all(getattr(l, 'credit', _ZERO) == _ZERO and
                 getattr(l, 'debit', _ZERO) == _ZERO for l in lines):
@@ -226,7 +226,7 @@ class Purchase:
             )
 
     def _get_reconcile_move(self):
-        " Return the move object to create "
+        "Return the move object to create"
         pool = Pool()
         Move = pool.get('account.move')
         Date = pool.get('ir.date')
@@ -243,7 +243,7 @@ class Purchase:
             )
 
     def _get_account_move_lines(self):
-        " Return the move object to create "
+        "Return the move object to create"
         pool = Pool()
         Line = pool.get('account.move.line')
         Currency = pool.get('currency.currency')
