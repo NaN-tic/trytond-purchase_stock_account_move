@@ -78,7 +78,8 @@ class Purchase:
         for purchase_line, invoice_amount in invoiced.iteritems():
             line = Line()
             line.account = purchase_line.product.account_expense_used
-            line.party = self.party
+            if line.account.party_required:
+                line.party = self.party
             if invoice_amount > _ZERO:
                 line.credit = invoice_amount
                 line.debit = _ZERO
@@ -93,7 +94,8 @@ class Purchase:
         amount = sum(l.credit - l.debit for l in to_reconcile)
         line = Line()
         line.account = config.pending_invoice_account
-        line.party = self.party
+        if line.account.party_required:
+            line.party = self.party
         if amount > Decimal('0.0'):
             line.debit = amount
         else:
@@ -108,7 +110,8 @@ class Purchase:
         pending_amount = amount - total_invoiced_amount
         line = Line()
         line.account = config.pending_invoice_account
-        line.party = self.party
+        if line.account.party_required:
+            line.party = self.party
         if pending_amount > Decimal('0.0'):
             line.credit = pending_amount
         else:
@@ -265,7 +268,8 @@ class Purchase:
             account = purchase_line.product.account_expense_used
             line = Line()
             line.account = account
-            line.party = self.party
+            if account.party_required:
+                line.party = self.party
             amount = Currency.compute(self.company.currency,
                 Decimal(quantity) * purchase_line.unit_price, self.currency)
             amount -= posted_amounts[purchase_line]
@@ -283,7 +287,8 @@ class Purchase:
         #Line with invoice_pending amount
         line = Line()
         line.account = config.pending_invoice_account
-        line.party = self.party
+        if line.account.party_required:
+            line.party = self.party
         if shipment_amount > 0:
             line.credit = abs(shipment_amount)
         else:
@@ -313,7 +318,8 @@ class Purchase:
                     line.journal = self._get_accounting_journal()
                     line.date = Date.today()
                     line.reference = self.reference
-                    line.party = move_line.party
+                    if hasattr(move_line, 'party'):
+                        line.party = move_line.party
                     lines.append(line)
         move_line.analytic_lines = lines
         return lines

@@ -261,10 +261,11 @@ Purchase services::
     >>> purchase_line.type = 'comment'
     >>> purchase_line.description = 'Comment'
     >>> purchase.save()
-    >>> Purchase.quote([purchase.id], config.context)
-    >>> Purchase.confirm([purchase.id], config.context)
+    >>> purchase.click('quote')
+    >>> purchase.click('confirm')
+    >>> purchase.click('process')
     >>> purchase.state
-    u'confirmed'
+    u'processing'
     >>> purchase.reload()
     >>> len(purchase.shipments), len(purchase.shipment_returns), len(purchase.invoices)
     (0, 0, 1)
@@ -299,10 +300,12 @@ Purchase products::
     >>> purchase_line.product = product2
     >>> purchase_line.quantity = 20.0
     >>> purchase.save()
-    >>> Purchase.quote([purchase.id], config.context)
-    >>> Purchase.confirm([purchase.id], config.context)
+    >>> purchase.save()
+    >>> purchase.click('quote')
+    >>> purchase.click('confirm')
+    >>> purchase.click('process')
     >>> purchase.state
-    u'confirmed'
+    u'processing'
     >>> purchase.reload()
     >>> len(purchase.moves), len(purchase.shipment_returns), len(purchase.invoices)
     (2, 0, 0)
@@ -456,10 +459,11 @@ Purchase products and invoice with diferent amount::
     >>> purchase_line.product = product1
     >>> purchase_line.quantity = 20.0
     >>> purchase.save()
-    >>> Purchase.quote([purchase.id], config.context)
-    >>> Purchase.confirm([purchase.id], config.context)
+    >>> purchase.click('quote')
+    >>> purchase.click('confirm')
+    >>> purchase.click('process')
     >>> purchase.state
-    u'confirmed'
+    u'processing'
     >>> purchase.reload()
     >>> len(purchase.moves), len(purchase.shipment_returns), len(purchase.invoices)
     (1, 0, 0)
@@ -503,10 +507,11 @@ Create a Return::
     >>> return_line.type = 'comment'
     >>> return_line.description = 'Comment'
     >>> return_.save()
-    >>> Purchase.quote([return_.id], config.context)
-    >>> Purchase.confirm([return_.id], config.context)
+    >>> return_.click('quote')
+    >>> return_.click('confirm')
+    >>> return_.click('process')
     >>> return_.state
-    u'confirmed'
+    u'processing'
     >>> return_.reload()
     >>> (len(return_.shipments), len(return_.shipment_returns),
     ...     len(return_.invoices))
