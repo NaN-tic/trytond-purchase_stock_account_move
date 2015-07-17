@@ -14,7 +14,7 @@ class Configuration:
     pending_invoice_account = fields.Function(fields.Many2One(
             'account.account', 'Pending Invoice Account', required=True,
             domain=[
-                ('kind', '=', 'payable'),
+                ('kind', '!=', 'view'),
                 ]), 'get_company_config', 'set_company_config')
 
     @classmethod
@@ -65,5 +65,5 @@ class ConfigurationCompany(ModelSQL):
     pending_invoice_account = fields.Many2One('account.account',
         'Pending Invoice Account',
             domain=[
-                ('kind', '=', 'payable'),
+                ('kind', '!=', 'view'),
                 ])
