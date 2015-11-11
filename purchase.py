@@ -127,12 +127,9 @@ class Purchase:
         for line in self.lines:
             if not line.product or line.product.type == 'service':
                 continue
-            skip_ids = set(x.id for x in line.moves_ignored)
-            skip_ids.update(x.id for x in line.moves_recreated)
             sign = -1 if line.quantity < 0.0 else 1
             for move in line.moves:
-                if move.state != 'done' \
-                        and move.id not in skip_ids:
+                if move.state != 'done':
                     continue
                 quantity = Uom.compute_qty(move.uom, move.quantity, line.unit)
                 quantity *= sign
