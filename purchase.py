@@ -28,11 +28,7 @@ class Purchase:
         super(Purchase, cls).process(purchases)
         for purchase in purchases:
             if purchase.invoice_method not in ['manual', 'order']:
-                if Transaction().user:
-                    with Transaction().set_user(0, set_context=True):
-                        purchase.create_account_move()
-                        purchase.reconcile_moves()
-                else:
+                with Transaction().set_context(_check_access=False):
                     purchase.create_account_move()
                     purchase.reconcile_moves()
 
