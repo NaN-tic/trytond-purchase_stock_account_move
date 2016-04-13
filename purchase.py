@@ -300,20 +300,20 @@ class Purchase:
             return []
 
         lines = []
-        if (purchase_line.analytic_accounts and
-                purchase_line.analytic_accounts.accounts):
-                for account in purchase_line.analytic_accounts.accounts:
-                    line = AnalyticLine()
-                    line.name = purchase_line.description
-                    line.debit = move_line.debit
-                    line.credit = move_line.credit
-                    line.account = account
-                    line.journal = self._get_accounting_journal()
-                    line.date = Date.today()
-                    line.reference = self.reference
-                    if hasattr(move_line, 'party'):
-                        line.party = move_line.party
-                    lines.append(line)
+        for entry in purchase_line.analytic_accounts:
+            if not entry.account:
+                continue
+            line = AnalyticLine()
+            line.name = purchase_line.description
+            line.debit = move_line.debit
+            line.credit = move_line.credit
+            line.account = entry.account
+            line.journal = self._get_accounting_journal()
+            line.date = Date.today()
+            line.reference = self.reference
+            if hasattr(move_line, 'party'):
+                line.party = move_line.party
+            lines.append(line)
         move_line.analytic_lines = lines
         return lines
 
