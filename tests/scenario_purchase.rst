@@ -252,7 +252,6 @@ Purchase products::
     ...     ])
     >>> len(moves)
     0
-    True
 
 Validate Shipments::
 
@@ -331,7 +330,6 @@ Validate Shipments::
     2
     >>> sum([a.debit for a in account_moves])
     Decimal('500.00')
-    True
 
 Open supplier invoices::
 
@@ -351,19 +349,16 @@ Open supplier invoices::
     >>> line, = account_moves
     >>> line.credit
     Decimal('200.00')
-    True
     >>> account_moves = AccountMoveLine.find([
     ...     ('account.code', '=', 'E1'),
     ...     ])
     >>> sum([a.debit - a.credit for a in account_moves])
     Decimal('300.00')
-    True
     >>> account_moves = AccountMoveLine.find([
     ...     ('account.code', '=', 'E2'),
     ...     ])
     >>> sum([a.debit - a.credit for a in account_moves])
     Decimal('500.00')
-    True
     >>> invoice2.invoice_date = today
     >>> invoice2.save()
     >>> Invoice.post([invoice2.id], config.context)
@@ -374,7 +369,6 @@ Open supplier invoices::
     ...     ])
     >>> sum(l.debit - l.credit for l in account_moves)
     Decimal('0.00')
-    True
     >>> all(a.reconciliation is not None for a in account_moves)
     True
     >>> account_moves = AccountMoveLine.find([
@@ -382,13 +376,11 @@ Open supplier invoices::
     ...     ])
     >>> sum([a.debit - a.credit for a in account_moves])
     Decimal('300.00')
-    True
     >>> account_moves = AccountMoveLine.find([
     ...     ('account.code', '=', 'E2'),
     ...     ])
     >>> sum([a.debit - a.credit for a in account_moves])
     Decimal('500.00')
-    True
 
 
 Purchase products and invoice with diferent amount::
@@ -490,14 +482,14 @@ Open customer credit note::
     >>> credit_note, = return_.invoices
     >>> config.user = account_user.id
     >>> credit_note.type
-    u'in_credit_note'
+    u'in'
     >>> len(credit_note.lines)
     1
     >>> sum(l.quantity for l in credit_note.lines)
-    4.0
+    -4.0
     >>> credit_note.invoice_date = today
     >>> credit_note.save()
-    >>> Invoice.post([credit_note.id], config.context)
+    >>> credit_note.click('post')
     >>> account_moves = AccountMoveLine.find([
     ...     ('reconciliation', '=', None),
     ...     ('origin', '=', 'purchase.purchase,' + str(return_.id)),
