@@ -7,12 +7,12 @@ from trytond.pool import Pool, PoolMeta
 from trytond.transaction import Transaction
 
 __all__ = ['Purchase', 'Move', 'Line']
-__metaclass__ = PoolMeta
 _ZERO = Decimal('0.0')
 
 
 class Purchase:
     __name__ = 'purchase.purchase'
+    __metaclass__ = PoolMeta
 
     @classmethod
     def __setup__(cls):
@@ -320,15 +320,17 @@ class Purchase:
 
 class Move:
     __name__ = 'account.move'
+    __metaclass__ = PoolMeta
 
     @classmethod
     def _get_origin(cls):
         origins = super(Move, cls)._get_origin()
-        if not 'purchase.purchase' in origins:
+        if 'purchase.purchase' not in origins:
             origins.append('purchase.purchase')
         return origins
 
 
 class Line:
     __name__ = 'account.move.line'
+    __metaclass__ = PoolMeta
     purchase_line = fields.Many2One('purchase.line', 'Purchase Line')

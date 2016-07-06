@@ -1,15 +1,15 @@
-#The COPYRIGHT file at the top level of
-#this repository contains the full copyright notices and license terms.
+# The COPYRIGHT file at the top level of
+# this repository contains the full copyright notices and license terms.
 from trytond.model import Model, ModelSQL, fields
 from trytond.pool import Pool, PoolMeta
 from trytond.transaction import Transaction
 
 __all__ = ['Configuration', 'ConfigurationCompany']
-__metaclass__ = PoolMeta
 
 
 class Configuration:
     __name__ = 'purchase.configuration'
+    __metaclass__ = PoolMeta
 
     pending_invoice_account = fields.Function(fields.Many2One(
             'account.account', 'Pending Invoice Account', required=True,
