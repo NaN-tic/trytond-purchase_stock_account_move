@@ -227,7 +227,7 @@ Purchase products::
     0
     >>> analytic_account.reload()
     >>> analytic_account.debit
-    Decimal('0.0')
+    Decimal('0.00')
 
 Validate Shipments::
 
