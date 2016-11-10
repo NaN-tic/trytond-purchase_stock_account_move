@@ -44,11 +44,11 @@ msgstr "Nom"
 
 msgctxt "field:purchase.configuration.company,write_date:"
 msgid "Write Date"
-msgstr "Data modificació"
+msgstr "Data de modificació"
 
 msgctxt "field:purchase.configuration.company,write_uid:"
 msgid "Write User"
-msgstr "Usuari modificació"
+msgstr "Usuari de modificació"
 
 msgctxt "model:purchase.configuration.company,name:"
 msgid "Purchase Configuration by Company"
