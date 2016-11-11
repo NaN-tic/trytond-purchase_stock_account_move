@@ -83,19 +83,19 @@ Create pending account and another expense account::
     >>> pending_payable = Account()
     >>> pending_payable.code = 'PR'
     >>> pending_payable.name = 'Pending payable'
+    >>> pending_payable.parent = payable.parent
     >>> pending_payable.type = payable.type
     >>> pending_payable.kind = 'payable'
     >>> pending_payable.reconcile = True
-    >>> pending_payable.parent = payable.parent
     >>> pending_payable.save()
     >>> expense.code = 'E1'
     >>> expense.save()
     >>> expense2 = Account()
     >>> expense2.code = 'E2'
     >>> expense2.name = 'Second expense'
+    >>> expense2.parent = expense.parent
     >>> expense2.type = expense.type
     >>> expense2.kind = 'expense'
-    >>> expense2.parent = expense.parent
     >>> expense2.save()
 
 
