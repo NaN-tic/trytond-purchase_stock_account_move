@@ -32,7 +32,7 @@ msgstr "Usuario de creación"
 
 msgctxt "field:purchase.configuration.company,id:"
 msgid "ID"
-msgstr "Identificador"
+msgstr "ID"
 
 msgctxt "field:purchase.configuration.company,pending_invoice_account:"
 msgid "Pending Invoice Account"
