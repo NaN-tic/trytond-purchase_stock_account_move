@@ -9,7 +9,8 @@ def register():
     Pool.register(
         Configuration,
         ConfigurationCompany,
-        Purchase,
         Move,
-        Line,
+        MoveLine,
+        Purchase,
+        PurchaseLine,
         module='purchase_stock_account_move', type_='model')
