@@ -5,10 +5,10 @@ from trytond.pool import Pool, PoolMeta
 from trytond.transaction import Transaction
 
 __all__ = ['Configuration', 'ConfigurationCompany']
-__metaclass__ = PoolMeta
 
 
 class Configuration:
+    __metaclass__ = PoolMeta
     __name__ = 'purchase.configuration'
 
     pending_invoice_account = fields.Function(fields.Many2One(
