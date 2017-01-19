@@ -2,6 +2,23 @@
 Purchase Scenario
 =================
 
+"""
+Create a purchase, with method invoice on shipment, and process it.
+Create it's shipment and post it. After post will create automatically for each
+move an account move with lines related to Pending Invoices accounts.
+Post the invoice related to that purchase. That post create an acount move to
+reconcile the Pending Invoice account move created before with the stock moves
+post. If the quantity are not the same reconcile the existent move
+and create new account move line, in the same account move, with the rest of
+amount. Leaving the not invoice quantites pending to reconcile.
+If you received the purchase quantities in 2 different shipments, the amount of
+Pending Invoices accounts will be acumulated in the same account move.
+
+The same process with negative purchase.
+
+On refund that invoice don't do anyting. (not implemented on test)
+"""
+
 Imports::
 
     >>> import datetime
@@ -34,7 +51,7 @@ Create company::
     >>> if not currencies:
     ...     currency = Currency(name='Euro', symbol=u'€', code='EUR',
     ...         rounding=Decimal('0.01'), mon_grouping='[3, 3, 0]',
-    ...         mon_decimal_point=',')
+    ...         mon_decimal_point=',', mon_thousands_sep=' ')
     ...     currency.save()
     ...     CurrencyRate(date=today + relativedelta(month=1, day=1),
     ...         rate=Decimal('1.0'), currency=currency).save()
@@ -45,7 +62,7 @@ Create company::
     >>> company_config = Wizard('company.company.config')
     >>> company_config.execute('company')
     >>> company = company_config.form
-    >>> party = Party(name='B2CK')
+    >>> party = Party(name='Dunder Mifflin')
     >>> party.save()
     >>> company.party = party
     >>> company.currency = currency
@@ -129,19 +146,14 @@ Create chart of accounts::
     ...         ('kind', '=', 'payable'),
     ...         ('company', '=', company.id),
     ...         ])
+    >>> revenue, = Account.find([
+    ...         ('kind', '=', 'revenue'),
+    ...         ('company', '=', company.id),
+    ...         ])
     >>> expense, = Account.find([
     ...         ('kind', '=', 'expense'),
     ...         ('company', '=', company.id),
     ...         ])
-    >>> expense.code = 'E1'
-    >>> expense.save()
-    >>> expense2 = Account()
-    >>> expense2.code = 'E2'
-    >>> expense2.name = 'Second expense'
-    >>> expense2.type = expense.type
-    >>> expense2.kind = 'expense'
-    >>> expense2.parent = expense.parent
-    >>> expense2.save()
     >>> pending_payable = Account()
     >>> pending_payable.code = 'PR'
     >>> pending_payable.name = 'Pending payable'
@@ -150,10 +162,6 @@ Create chart of accounts::
     >>> pending_payable.reconcile = True
     >>> pending_payable.parent = payable.parent
     >>> pending_payable.save()
-    >>> revenue, = Account.find([
-    ...         ('kind', '=', 'revenue'),
-    ...         ('company', '=', company.id),
-    ...         ])
     >>> create_chart.form.account_receivable = receivable
     >>> create_chart.form.account_payable = payable
     >>> create_chart.execute('create_properties')
@@ -222,28 +230,12 @@ Create products::
     >>> template2.list_price = Decimal('40')
     >>> template2.cost_price = Decimal('25')
     >>> template2.cost_price_method = 'fixed'
-    >>> template2.account_expense = expense2
+    >>> template2.account_expense = expense
     >>> template2.account_revenue = revenue
     >>> template2.save()
     >>> product2 = Product()
     >>> product2.template = template2
     >>> product2.save()
-    >>> service_product = Product()
-    >>> service_template = ProductTemplate()
-    >>> service_template.name = 'product'
-    >>> service_template.category = category
-    >>> service_template.default_uom = unit
-    >>> service_template.type = 'service'
-    >>> service_template.purchasable = True
-    >>> service_template.salable = True
-    >>> service_template.list_price = Decimal('20')
-    >>> service_template.cost_price = Decimal('15')
-    >>> service_template.cost_price_method = 'fixed'
-    >>> service_template.account_expense = expense
-    >>> service_template.account_revenue = revenue
-    >>> service_template.save()
-    >>> service_product.template = service_template
-    >>> service_product.save()
 
 Create payment term::
 
@@ -254,6 +246,32 @@ Create payment term::
     >>> payment_term.lines.append(payment_term_line)
     >>> payment_term.save()
 
+Create an Inventory::
+
+    >>> config.user = stock_user.id
+    >>> Inventory = Model.get('stock.inventory')
+    >>> InventoryLine = Model.get('stock.inventory.line')
+    >>> Location = Model.get('stock.location')
+    >>> storage, = Location.find([
+    ...         ('code', '=', 'STO'),
+    ...         ])
+    >>> inventory = Inventory()
+    >>> inventory.location = storage
+    >>> inventory.save()
+    >>> inventory_line = InventoryLine(product=product1, inventory=inventory)
+    >>> inventory_line.quantity = 100.0
+    >>> inventory_line.expected_quantity = 0.0
+    >>> inventory.save()
+    >>> inventory_line.save()
+    >>> inventory_line = InventoryLine(product=product2, inventory=inventory)
+    >>> inventory_line.quantity = 100.0
+    >>> inventory_line.expected_quantity = 0.0
+    >>> inventory.save()
+    >>> inventory_line.save()
+    >>> Inventory.confirm([inventory.id], config.context)
+    >>> inventory.state
+    u'done'
+
 Purchase products::
 
     >>> config.user = purchase_user.id
@@ -263,6 +281,7 @@ Purchase products::
     >>> purchase = Purchase()
     >>> purchase.party = supplier
     >>> purchase.payment_term = payment_term
+    >>> purchase.invoice_method = 'shipment'
     >>> purchase_line = PurchaseLine()
     >>> purchase.lines.append(purchase_line)
     >>> purchase_line.product = product1

@@ -2,3 +2,5 @@
 # copyright notices and license terms.
 
 from .test_purchase_stock_account_move import suite
+
+__all__ = ['suite']
