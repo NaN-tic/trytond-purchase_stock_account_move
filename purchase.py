@@ -8,15 +8,15 @@ from trytond.pyson import Eval
 from trytond.transaction import Transaction
 
 __all__ = ['Move', 'MoveLine', 'Purchase', 'PurchaseLine']
-__metaclass__ = PoolMeta
 _ZERO = Decimal('0.0')
 
 # Add sale_stock_account_move module depends temprally, becasue this module is
-#   used only by one client. If it's used by another cleint when will need to
-#   crete a little module with the stock.move property.
+#   used only by one client. If it's used by another client we will need to
+#   create a little module with the stock.move property.
 
 
 class Move:
+    __metaclass__ = PoolMeta
     __name__ = 'account.move'
 
     @classmethod
@@ -28,11 +28,13 @@ class Move:
 
 
 class MoveLine:
+    __metaclass__ = PoolMeta
     __name__ = 'account.move.line'
     purchase_line = fields.Many2One('purchase.line', 'Purchase Line')
 
 
 class Purchase:
+    __metaclass__ = PoolMeta
     __name__ = 'purchase.purchase'
 
     @classmethod
@@ -131,6 +133,7 @@ class Purchase:
 
 
 class PurchaseLine:
+    __metaclass__ = PoolMeta
     __name__ = 'purchase.line'
 
     analytic_required = fields.Function(fields.Boolean("Require Analytics"),
@@ -154,7 +157,7 @@ class PurchaseLine:
         if not hasattr(self, 'analytic_accounts') or not self.product:
             return False
 
-        if getattr(self.product.account_revenue_used, 'analytic_required',
+        if getattr(self.product.account_expense_used, 'analytic_required',
                     False):
             return True
         return False
@@ -228,7 +231,7 @@ class PurchaseLine:
 
         if invoiced_amount != _ZERO:
             invoiced_line = MoveLine()
-            invoiced_line.account = self.product.account_revenue_used
+            invoiced_line.account = self.product.account_expense_used
             if invoiced_line.account.party_required:
                 invoiced_line.party = self.purchase.party
             invoiced_line.purchase = self
@@ -265,13 +268,19 @@ class PurchaseLine:
         Uom = pool.get('product.uom')
 
         sign = -1 if self.quantity < 0.0 else 1
-        unposted_quantity = 0.0
+        posted_quantity = 0.0
+        sended_quantity = 0.0
+        invoice_quantity = {}
         for move in self.moves:
             if move.state != 'done':
                 continue
-            unposted_quantity += sign * Uom.compute_qty(move.uom,
-                move.quantity - move.posted_quantity, self.unit)
-        return unposted_quantity
+            sended_quantity += move.quantity
+            for invoice, quantity in move.posted_quantity.iteritems():
+                if invoice not in invoice_quantity:
+                    invoice_quantity[invoice] = quantity
+        posted_quantity = sum(invoice_quantity.values())
+        return sign * Uom.compute_qty(move.uom,
+            sended_quantity - posted_quantity, self.unit)
 
     def _set_analytic_lines(self, move_line):
         """
