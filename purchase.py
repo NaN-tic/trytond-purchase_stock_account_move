@@ -123,7 +123,7 @@ class Purchase:
         pool = Pool()
         Journal = pool.get('account.journal')
         journals = Journal.search([
-                ('type', '=', 'revenue'),
+                ('type', '=', 'expense'),
                 ], limit=1)
         if journals:
             journal, = journals
