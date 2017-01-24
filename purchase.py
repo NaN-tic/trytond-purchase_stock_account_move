@@ -62,7 +62,7 @@ class Purchase:
         Move = pool.get('account.move')
         MoveLine = pool.get('account.move.line')
 
-        if self.invoice_method in ['manual', 'order']:
+        if self.purchase.invoice_method in ['manual', 'order']:
             return
 
         config = Config(1)
@@ -176,7 +176,7 @@ class PurchaseLine:
             # Purchase Line not shipped
             return []
 
-        unposted_shiped_quantity = self._get_unposted_shiped_quantity()
+        unposted_shiped_quantity = self._get_unposted_shipped_quantity()
 
         # Previously created stock account move lines (pending to invoice
         # amount)
@@ -260,7 +260,51 @@ class PurchaseLine:
 
         return move_lines
 
-    def _get_unposted_shiped_quantity(self):
+    def _get_shipped_amount(self, limit_date=None):
+        pool = Pool()
+        Currency = pool.get('currency.currency')
+
+        shipped_quantity = self._get_shipped_quantity(
+            limit_date)
+
+        return Currency.compute(self.purchase.company.currency,
+            Decimal(shipped_quantity) * self.unit_price,
+            self.purchase.currency) if shipped_quantity else _ZERO
+
+    def _get_shipped_quantity(self, limit_date=None):
+        """
+        Returns the shipped quantity which is not invoiced and posted
+        """
+        pool = Pool()
+        Uom = pool.get('product.uom')
+
+        sign = -1 if self.quantity < 0.0 else 1
+        sended_quantity = 0.0
+        for move in self.moves:
+            if limit_date != None and move.effective_date and \
+                    move.effective_date > limit_date:
+                continue
+
+            if move.state != 'done':
+                continue
+
+            sended_quantity += move.quantity
+
+        return sign * Uom.compute_qty(move.uom,
+            sended_quantity, self.unit)
+
+    def _get_unposted_shipped_amount(self, limit_date=None):
+        pool = Pool()
+        Currency = pool.get('currency.currency')
+
+        unposted_shipped_quantity = self._get_unposted_shipped_quantity(
+            limit_date)
+
+        return Currency.compute(self.purchase.company.currency,
+            Decimal(unposted_shipped_quantity) * self.unit_price,
+            self.purchase.currency) if unposted_shipped_quantity else _ZERO
+
+    def _get_unposted_shipped_quantity(self, limit_date=None):
         """
         Returns the shipped quantity which is not invoiced and posted
         """
@@ -272,9 +316,15 @@ class PurchaseLine:
         sended_quantity = 0.0
         invoice_quantity = {}
         for move in self.moves:
+            if limit_date != None and move.effective_date and \
+                    move.effective_date > limit_date:
+                continue
+
             if move.state != 'done':
                 continue
+
             sended_quantity += move.quantity
+
             for invoice, quantity in move.posted_quantity.iteritems():
                 if invoice not in invoice_quantity:
                     invoice_quantity[invoice] = quantity
