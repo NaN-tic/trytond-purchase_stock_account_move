@@ -284,14 +284,13 @@ class PurchaseLine:
             if limit_date != None and move.effective_date and \
                     move.effective_date > limit_date:
                 continue
-
             if move.state != 'done':
                 continue
 
-            sended_quantity += move.quantity
+            sended_quantity += Uom.compute_qty(move.uom, move.quantity,
+                self.unit)
 
-        return sign * Uom.compute_qty(move.uom,
-            sended_quantity, self.unit)
+        return sign * sended_quantity
 
     def _get_unposted_shipped_amount(self, limit_date=None):
         pool = Pool()
