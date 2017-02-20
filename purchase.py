@@ -236,11 +236,11 @@ class PurchaseLine:
                 invoiced_line.party = self.purchase.party
             invoiced_line.purchase = self
             if invoiced_amount > _ZERO:
-                invoiced_line.debit = invoiced_amount
-                invoiced_line.credit = _ZERO
-            else:
-                invoiced_line.credit = abs(invoiced_amount)
+                invoiced_line.credit = invoiced_amount
                 invoiced_line.debit = _ZERO
+            else:
+                invoiced_line.debit = abs(invoiced_amount)
+                invoiced_line.credit = _ZERO
             self._set_analytic_lines(invoiced_line)
             move_lines.append(invoiced_line)
 
