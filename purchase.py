@@ -202,11 +202,11 @@ class PurchaseLine:
             if to_reconcile_line.account.party_required:
                 to_reconcile_line.party = self.purchase.party
             if amount_to_reconcile > Decimal('0.0'):
-                to_reconcile_line.credit = amount_to_reconcile
-                to_reconcile_line.debit = _ZERO
-            else:
-                to_reconcile_line.debit = abs(amount_to_reconcile)
+                to_reconcile_line.debit = amount_to_reconcile
                 to_reconcile_line.credit = _ZERO
+            else:
+                to_reconcile_line.credit = abs(amount_to_reconcile)
+                to_reconcile_line.debit = _ZERO
             to_reconcile_line.reconciliation = None
             move_lines.append(to_reconcile_line)
 
@@ -251,11 +251,11 @@ class PurchaseLine:
                 pending_line.party = self.purchase.party
             pending_line.purchase_line = self
             if pending_amount > _ZERO:
-                pending_line.debit = pending_amount
-                pending_line.credit = _ZERO
-            else:
-                pending_line.credit = abs(pending_amount)
+                pending_line.credit = pending_amount
                 pending_line.debit = _ZERO
+            else:
+                pending_line.debit = abs(pending_amount)
+                pending_line.credit = _ZERO
             move_lines.append(pending_line)
 
         return move_lines
