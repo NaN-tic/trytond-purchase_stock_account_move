@@ -62,7 +62,7 @@ class Purchase:
         Move = pool.get('account.move')
         MoveLine = pool.get('account.move.line')
 
-        if self.purchase.invoice_method in ['manual', 'order']:
+        if self.invoice_method in ['manual', 'order']:
             return
 
         config = Config(1)
