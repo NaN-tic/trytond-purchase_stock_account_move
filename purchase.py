@@ -264,14 +264,14 @@ class PurchaseLine:
         pool = Pool()
         Currency = pool.get('currency.currency')
 
-        shipped_quantity = self._get_shipped_quantity(
+        shipped_quantity = self._get_shipped_qty(
             limit_date)
 
         return Currency.compute(self.purchase.company.currency,
             Decimal(shipped_quantity) * self.unit_price,
             self.purchase.currency) if shipped_quantity else _ZERO
 
-    def _get_shipped_quantity(self, limit_date=None):
+    def _get_shipped_qty(self, limit_date=None):
         """
         Returns the shipped quantity which is not invoiced and posted
         """
