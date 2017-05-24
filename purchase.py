@@ -7,7 +7,8 @@ from trytond.pool import Pool, PoolMeta
 from trytond.pyson import Eval
 from trytond.transaction import Transaction
 
-__all__ = ['Move', 'MoveLine', 'Purchase', 'PurchaseLine']
+__all__ = ['Move', 'MoveLine', 'Purchase', 'PurchaseLine',
+    'HandleShipmentException']
 _ZERO = Decimal('0.0')
 
 # Add sale_stock_account_move module depends temprally, becasue this module is
@@ -49,8 +50,9 @@ class Purchase:
     @classmethod
     def process(cls, purchases):
         super(Purchase, cls).process(purchases)
-        for purchase in purchases:
-            purchase.create_stock_account_move()
+        if not Transaction().context.get('stock_account_move'):
+            for purchase in purchases:
+                purchase.create_stock_account_move()
 
     def create_stock_account_move(self):
         """
@@ -201,12 +203,12 @@ class PurchaseLine:
             to_reconcile_line.account = pending_invoice_account
             if to_reconcile_line.account.party_required:
                 to_reconcile_line.party = self.purchase.party
-            if amount_to_reconcile > Decimal('0.0'):
-                to_reconcile_line.debit = amount_to_reconcile
-                to_reconcile_line.credit = _ZERO
-            else:
-                to_reconcile_line.credit = abs(amount_to_reconcile)
+            if amount_to_reconcile > _ZERO:
+                to_reconcile_line.credit = amount_to_reconcile
                 to_reconcile_line.debit = _ZERO
+            else:
+                to_reconcile_line.debit = abs(amount_to_reconcile)
+                to_reconcile_line.credit = _ZERO
             to_reconcile_line.reconciliation = None
             move_lines.append(to_reconcile_line)
 
@@ -214,17 +216,16 @@ class PurchaseLine:
             Decimal(unposted_shiped_quantity) * self.unit_price,
             self.purchase.currency) if unposted_shiped_quantity else _ZERO
 
-        if amount_to_reconcile == _ZERO and not unposted_shiped_quantity:
+        if amount_to_reconcile == _ZERO and unposted_shiped_quantity:
             # no previous amount in pending invoice account nor pending to
             # invoice (and post) quantity => first time
             invoiced_amount = -pending_amount
         elif not unposted_shiped_quantity:
             # no pending to invoice and post quantity => invoiced all shiped
-            invoiced_amount = amount_to_reconcile
+            invoiced_amount = -amount_to_reconcile
         else:
             # invoiced partially shiped quantity
-            invoiced_amount = amount_to_reconcile - pending_amount
-            pending_amount = amount_to_reconcile - invoiced_amount
+            invoiced_amount = -(amount_to_reconcile + pending_amount)
 
         if pending_amount == amount_to_reconcile:
             return []
@@ -278,6 +279,8 @@ class PurchaseLine:
             for invoice, quantity in move.posted_quantity.iteritems():
                 if invoice not in invoice_quantity:
                     invoice_quantity[invoice] = quantity
+                else:
+                    invoice_quantity[invoice] += quantity
         posted_quantity = sum(invoice_quantity.values())
         return sign * Uom.compute_qty(move.uom,
             sended_quantity - posted_quantity, self.unit)
@@ -308,3 +311,13 @@ class PurchaseLine:
             line.date = Date.today()
             line.reference = self.purchase.reference
             line.party = self.purchas.party
+
+
+class HandleShipmentException:
+    __metaclass__ = PoolMeta
+    __name__ = 'purchase.handle.shipment.exception'
+
+    def transition_handle(self):
+        with Transaction().set_context(stock_account_move=True):
+            return super(HandleShipmentException, self).transition_handle()
+
