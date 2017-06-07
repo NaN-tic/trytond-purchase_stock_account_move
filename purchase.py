@@ -7,9 +7,9 @@ from trytond.pool import Pool, PoolMeta
 from trytond.pyson import Eval
 from trytond.transaction import Transaction
 
-__all__ = ['Move', 'MoveLine', 'Purchase', 'PurchaseLine']
+# __all__ = ['Move', 'MoveLine', 'Purchase', 'PurchaseLine']
 __all__ = ['Move', 'MoveLine', 'Purchase', 'PurchaseLine',
-    'HandleShipmentException']]
+    'HandleShipmentException']
 
 _ZERO = Decimal('0.0')
 
