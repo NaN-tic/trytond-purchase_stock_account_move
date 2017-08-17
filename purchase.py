@@ -310,7 +310,7 @@ class PurchaseLine:
             line.journal = self.purchase._get_accounting_journal()
             line.date = Date.today()
             line.reference = self.purchase.reference
-            line.party = self.purchas.party
+            line.party = self.purchase.party
 
 
 class HandleShipmentException:
