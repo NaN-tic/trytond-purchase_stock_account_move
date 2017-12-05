@@ -13,8 +13,6 @@ class ShipmentIn:
     __name__ = 'stock.shipment.in'
 
     @classmethod
-    @ModelView.button
-    @Workflow.transition('cancel')
     def cancel(cls, shipments):
         with Transaction().set_context(stock_account_move=True):
             super(ShipmentIn, cls).cancel(shipments)
