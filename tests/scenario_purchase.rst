@@ -33,12 +33,13 @@ Create database::
     >>> config = config.set_trytond()
     >>> config.pool.test = True
 
-Install purchase::
+Install purchase stock move and stock split::
 
     >>> Module = Model.get('ir.module.module')
-    >>> purchase_module, = Module.find([
-    ...     ('name', '=', 'purchase_stock_account_move')])
+    >>> purchase_module, stock_split_module = Module.find([
+    ...     ('name', 'in', ['purchase_stock_account_move', 'stock_split'])])
     >>> Module.install([purchase_module.id], config.context)
+    >>> Module.install([stock_split_module.id], config.context)
     >>> Wizard('ir.module.module.install_upgrade').execute('upgrade')
 
 Create company::
@@ -321,6 +322,11 @@ Validate Shipments::
     >>> shipment.save()
     >>> shipment.origins == purchase.rec_name
     True
+    >>> m1, m2 =shipment.incoming_moves
+    >>> split_move = Wizard('stock.move.split', [m2])
+    >>> split_move.form.quantity = 2
+    >>> split_move.form.count = 1
+    >>> split_move.execute('split')
     >>> ShipmentIn.receive([shipment.id], config.context)
     >>> ShipmentIn.done([shipment.id], config.context)
     >>> purchase.reload()
@@ -333,7 +339,7 @@ Validate Shipments::
     ...     ])
     >>> len(account_moves) == 2
     True
-    >>> sum([a.debit for a in account_moves]) == Decimal('150.0')
+    >>> sum([a.credit for a in account_moves]) == Decimal('150.0')
     True
 
 Open supplier invoice::
@@ -358,13 +364,6 @@ Open supplier invoice::
     >>> sum(l.debit - l.credit for l in account_moves) == Decimal('0.0')
     True
     >>> all(a.reconciliation is not None for a in account_moves)
-    True
-
-Invoice lines must be linked to each stock moves::
-
-    >>> invoice_line1.stock_moves == [stock_move1]
-    True
-    >>> invoice_line2.stock_moves == [stock_move2]
     True
 
 Purchase products and not receive all and not invoice all::
@@ -416,7 +415,7 @@ Purchase products and not receive all and not invoice all::
     >>> shipment = ShipmentIn()
     >>> shipment.supplier = supplier
     >>> for move in purchase.moves:
-    ...     incoming_move = Move(id=move.id)
+    ...     incoming_move = Move(id=stock_move2.id)
     ...     move.quantity = 3.0
     ...     shipment.incoming_moves.append(incoming_move)
     >>> shipment.save()
@@ -432,15 +431,15 @@ Purchase products and not receive all and not invoice all::
     ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
     ...     ('account', '=', pending_payable.id),
     ...     ])
-    >>> len(account_moves) == 2
+    >>> len(account_moves) == 1
     True
-    >>> sum([a.debit for a in account_moves]) == Decimal('120.0')
+    >>> sum([a.credit for a in account_moves]) == Decimal('75.0')
     True
 
     >>> config.user = purchase_user.id
     >>> invoice, = purchase.invoices
     >>> config.user = account_user.id
-    >>> invoice = Invoice(invoice.id)
+    >>> invoice.reload()
     >>> invoice.type
     u'in_invoice'
     >>> invoice.invoice_date = today
@@ -452,14 +451,7 @@ Purchase products and not receive all and not invoice all::
     ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
     ...     ('account', '=', pending_payable.id),
     ...     ])
-    >>> sum(l.debit - l.credit for l in account_moves) == Decimal('45.0')
-    True
-    >>> all(a.reconciliation is not None for a in account_moves)
-    True
-
-    >>> invoice_line1.stock_moves == [stock_move1]
-    True
-    >>> invoice_line2.stock_moves == [stock_move2]
+    >>> sum(l.credit - l.debit for l in account_moves) == Decimal('45.0')
     True
 
 Create a Return of the 2 products not received::
@@ -487,18 +479,19 @@ Create a Return of the 2 products not received::
     ...     len(return_.invoices))
     (0, 1, 0)
     >>> config.user = account_user.id
-    >>> moves = AccountMoveLine.find([
-    ...     ('account', '=', pending_payable.id)
+    >>> account_moves = AccountMoveLine.find([
+    ...     ('account', '=', pending_payable.id),
+    ...     ('origin', '=', 'purchase.purchase,' + str(return_.id)),
     ...     ])
-    >>> len(moves) == 2
+    >>> len(account_moves) == 1
     True
 
 Check Return Shipments::
 
+    >>> ShipmentReturn = Model.get('stock.shipment.in.return')
     >>> config.user = purchase_user.id
     >>> ship_return, = return_.shipment_returns
     >>> config.user = stock_user.id
-    >>> ShipmentReturn = Model.get('stock.shipment.in.return')
     >>> ship_return.state
     u'waiting'
     >>> move_return, = ship_return.moves
@@ -515,7 +508,7 @@ Check Return Shipments::
     ...     ('origin', '=', 'purchase.purchase,' + str(return_.id)),
     ...     ('account', '=', pending_payable.id),
     ...     ])
-    >>> len(account_moves) == 1
+    >>> len(account_moves) == 3
     True
     >>> sum([a.credit for a in account_moves]) == Decimal('30.0')
     True
@@ -540,5 +533,5 @@ Open customer credit note::
     ...     ('origin', '=', 'purchase.purchase,' + str(return_.id)),
     ...     ('account', '=', pending_payable.id),
     ...     ])
-    >>> len(account_moves) == 0
+    >>> len(account_moves) == 1
     True

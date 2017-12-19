@@ -64,7 +64,7 @@ class Purchase:
         Move = pool.get('account.move')
         MoveLine = pool.get('account.move.line')
 
-        if self.invoice_method in ['manual', 'order']:
+        if self.invoice_method != 'shipment':
             return
 
         config = Config(1)
@@ -282,6 +282,9 @@ class PurchaseLine:
                 else:
                     invoice_quantity[invoice] += quantity
         posted_quantity = sum(invoice_quantity.values())
+        # in case split moves, posted quantity is greater than purchase quantity
+        if posted_quantity > self.quantity:
+            posted_quantity = self.quantity
         return sign * Uom.compute_qty(move.uom,
             sended_quantity - posted_quantity, self.unit)
 
@@ -320,4 +323,3 @@ class HandleShipmentException:
     def transition_handle(self):
         with Transaction().set_context(stock_account_move=True):
             return super(HandleShipmentException, self).transition_handle()
-
