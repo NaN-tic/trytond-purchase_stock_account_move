@@ -7,11 +7,13 @@ from trytond.pool import Pool, PoolMeta
 from trytond.pyson import Eval
 from trytond.transaction import Transaction
 
-# __all__ = ['Move', 'MoveLine', 'Purchase', 'PurchaseLine']
 __all__ = ['Move', 'MoveLine', 'Purchase', 'PurchaseLine',
     'HandleShipmentException']
-
 _ZERO = Decimal('0.0')
+
+# Add sale_stock_account_move module depends temprally, becasue this module is
+#   used only by one client. If it's used by another client we will need to
+#   create a little module with the stock.move property.
 
 
 class Move:
@@ -29,7 +31,6 @@ class Move:
 class MoveLine:
     __metaclass__ = PoolMeta
     __name__ = 'account.move.line'
-
     purchase_line = fields.Many2One('purchase.line', 'Purchase Line')
 
 
@@ -63,7 +64,7 @@ class Purchase:
         Move = pool.get('account.move')
         MoveLine = pool.get('account.move.line')
 
-        if self.invoice_method in ['manual', 'order']:
+        if self.invoice_method != 'shipment':
             return
 
         config = Config(1)
@@ -177,7 +178,7 @@ class PurchaseLine:
             # Purchase Line not shipped
             return []
 
-        unposted_shiped_quantity = self._get_unposted_shipped_quantity()
+        unposted_shiped_quantity = self._get_unposted_shiped_quantity()
 
         # Previously created stock account move lines (pending to invoice
         # amount)
@@ -203,11 +204,11 @@ class PurchaseLine:
             if to_reconcile_line.account.party_required:
                 to_reconcile_line.party = self.purchase.party
             if amount_to_reconcile > _ZERO:
-                to_reconcile_line.debit = amount_to_reconcile
-                to_reconcile_line.credit = _ZERO
-            else:
-                to_reconcile_line.credit = abs(amount_to_reconcile)
+                to_reconcile_line.credit = amount_to_reconcile
                 to_reconcile_line.debit = _ZERO
+            else:
+                to_reconcile_line.debit = abs(amount_to_reconcile)
+                to_reconcile_line.credit = _ZERO
             to_reconcile_line.reconciliation = None
             move_lines.append(to_reconcile_line)
 
@@ -260,50 +261,7 @@ class PurchaseLine:
 
         return move_lines
 
-    def _get_shipped_amount(self, limit_date=None):
-        pool = Pool()
-        Currency = pool.get('currency.currency')
-
-        shipped_quantity = self._get_shipped_qty(
-            limit_date)
-
-        return Currency.compute(self.purchase.company.currency,
-            Decimal(shipped_quantity) * self.unit_price,
-            self.purchase.currency) if shipped_quantity else _ZERO
-
-    def _get_shipped_qty(self, limit_date=None):
-        """
-        Returns the shipped quantity which is not invoiced and posted
-        """
-        pool = Pool()
-        Uom = pool.get('product.uom')
-
-        sign = -1 if self.quantity < 0.0 else 1
-        sended_quantity = 0.0
-        for move in self.moves:
-            if limit_date != None and move.effective_date and \
-                    move.effective_date > limit_date:
-                continue
-            if move.state != 'done':
-                continue
-
-            sended_quantity += Uom.compute_qty(move.uom, move.quantity,
-                self.unit)
-
-        return sign * sended_quantity
-
-    def _get_unposted_shipped_amount(self, limit_date=None):
-        pool = Pool()
-        Currency = pool.get('currency.currency')
-
-        unposted_shipped_quantity = self._get_unposted_shipped_quantity(
-            limit_date)
-
-        return Currency.compute(self.purchase.company.currency,
-            Decimal(unposted_shipped_quantity) * self.unit_price,
-            self.purchase.currency) if unposted_shipped_quantity else _ZERO
-
-    def _get_unposted_shipped_quantity(self, limit_date=None):
+    def _get_unposted_shiped_quantity(self):
         """
         Returns the shipped quantity which is not invoiced and posted
         """
@@ -315,21 +273,18 @@ class PurchaseLine:
         sended_quantity = 0.0
         invoice_quantity = {}
         for move in self.moves:
-            if limit_date != None and move.effective_date and \
-                    move.effective_date > limit_date:
-                continue
-
             if move.state != 'done':
                 continue
-
             sended_quantity += move.quantity
-
             for invoice, quantity in move.posted_quantity.iteritems():
                 if invoice not in invoice_quantity:
                     invoice_quantity[invoice] = quantity
                 else:
                     invoice_quantity[invoice] += quantity
         posted_quantity = sum(invoice_quantity.values())
+        # in case split moves, posted quantity is greater than purchase quantity
+        if posted_quantity > self.quantity:
+            posted_quantity = self.quantity
         return sign * Uom.compute_qty(move.uom,
             sended_quantity - posted_quantity, self.unit)
 
@@ -358,7 +313,7 @@ class PurchaseLine:
             line.journal = self.purchase._get_accounting_journal()
             line.date = Date.today()
             line.reference = self.purchase.reference
-            line.party = self.purchas.party
+            line.party = self.purchase.party
 
 
 class HandleShipmentException:
