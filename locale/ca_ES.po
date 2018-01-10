@@ -1,4 +1,4 @@
-# 
+#
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
@@ -32,7 +32,7 @@ msgstr "Usuari de creació"
 
 msgctxt "field:purchase.configuration.company,id:"
 msgid "ID"
-msgstr "Identificador"
+msgstr "ID"
 
 msgctxt "field:purchase.configuration.company,pending_invoice_account:"
 msgid "Pending Invoice Account"
@@ -44,11 +44,11 @@ msgstr "Nom"
 
 msgctxt "field:purchase.configuration.company,write_date:"
 msgid "Write Date"
-msgstr "Data modificació"
+msgstr "Data de modificació"
 
 msgctxt "field:purchase.configuration.company,write_uid:"
 msgid "Write User"
-msgstr "Usuari modificació"
+msgstr "Usuari de modificació"
 
 msgctxt "model:purchase.configuration.company,name:"
 msgid "Purchase Configuration by Company"
