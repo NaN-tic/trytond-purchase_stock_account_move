@@ -400,7 +400,7 @@ Validate Shipments::
     ...     ('account', '=', pending_payable.id),
     ...     ])
     >>> len(account_moves)
-    6
+    4
     >>> sum([a.debit - a.credit for a in account_moves])
     Decimal('-800.00')
     >>> account_moves = AccountMoveLine.find([
