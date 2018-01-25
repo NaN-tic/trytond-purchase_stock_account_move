@@ -162,6 +162,22 @@ Create chart of accounts::
     >>> pending_payable.reconcile = True
     >>> pending_payable.parent = payable.parent
     >>> pending_payable.save()
+    >>> expense1 = Account()
+    >>> expense1.code  ='E1'
+    >>> expense1.name = 'Expense 1'
+    >>> expense1.type = receivable.type
+    >>> expense1.kind = 'expense'
+    >>> expense1.reconcile = True
+    >>> expense1.parent = expense.parent
+    >>> expense1.save()
+    >>> expense2 = Account()
+    >>> expense2.code = 'E2'
+    >>> expense2.name = 'Expense 2'
+    >>> expense2.type = receivable.type
+    >>> expense2.kind = 'expense'
+    >>> expense2.reconcile = True
+    >>> expense2.parent = expense.parent
+    >>> expense2.save()
     >>> create_chart.form.account_receivable = receivable
     >>> create_chart.form.account_payable = payable
     >>> create_chart.execute('create_properties')
@@ -215,7 +231,7 @@ Create products::
     >>> template1.list_price = Decimal('20')
     >>> template1.cost_price = Decimal('15')
     >>> template1.cost_price_method = 'fixed'
-    >>> template1.account_expense = expense
+    >>> template1.account_expense = expense1
     >>> template1.account_revenue = revenue
     >>> template1.save()
     >>> product1.template = template1
@@ -230,7 +246,7 @@ Create products::
     >>> template2.list_price = Decimal('40')
     >>> template2.cost_price = Decimal('25')
     >>> template2.cost_price_method = 'fixed'
-    >>> template2.account_expense = expense
+    >>> template2.account_expense = expense2
     >>> template2.account_revenue = revenue
     >>> template2.save()
     >>> product2 = Product()
@@ -343,8 +359,8 @@ Validate Shipments::
     ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
     ...     ('account', '=', pending_payable.id),
     ...     ])
-    >>> len(account_moves) == 1
-    True
+    >>> len(account_moves)
+    2
     >>> sum([a.credit for a in account_moves]) == Decimal('600.0')
     True
     >>> account_moves = AccountMoveLine.find([
@@ -383,10 +399,10 @@ Validate Shipments::
     ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
     ...     ('account', '=', pending_payable.id),
     ...     ])
-    >>> len(account_moves) == 2
-    True
-    >>> sum([a.credit for a in account_moves]) == Decimal('800.0')
-    True
+    >>> len(account_moves)
+    6
+    >>> sum([a.debit - a.credit for a in account_moves])
+    Decimal('-800.00')
     >>> account_moves = AccountMoveLine.find([
     ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
     ...     ('account.code', '=', 'E1'),
@@ -422,9 +438,8 @@ Open supplier invoices::
     ...     ('account', '=', pending_payable.id),
     ...     ('reconciliation', '=', None),
     ...     ])
-    >>> line, = account_moves
-    >>> line.credit == Decimal('200.0')
-    True
+    >>> sum([l.debit - l.credit for l in account_moves])
+    Decimal('-200.00')
     >>> account_moves = AccountMoveLine.find([
     ...     ('account.code', '=', 'E1'),
     ...     ])

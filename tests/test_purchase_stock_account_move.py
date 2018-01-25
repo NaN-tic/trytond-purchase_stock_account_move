@@ -29,7 +29,7 @@ def suite():
     suite.addTests(doctest.DocFileSuite('scenario_purchase.rst',
             setUp=doctest_setup, tearDown=doctest_teardown, encoding='utf-8',
             optionflags=doctest.REPORT_ONLY_FIRST_FAILURE))
-    #suite.addTests(doctest.DocFileSuite('scenario_analytic_purchase.rst',
-    #        setUp=doctest_setup, tearDown=doctest_teardown, encoding='utf-8',
-    #        optionflags=doctest.REPORT_ONLY_FIRST_FAILURE))
+    suite.addTests(doctest.DocFileSuite('scenario_analytic_purchase.rst',
+            setUp=doctest_setup, tearDown=doctest_teardown, encoding='utf-8',
+            optionflags=doctest.REPORT_ONLY_FIRST_FAILURE))
     return suite
