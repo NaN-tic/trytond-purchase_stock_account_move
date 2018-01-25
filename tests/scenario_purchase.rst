@@ -270,29 +270,29 @@ Validate Shipments::
     >>> ShipmentIn.receive([shipment.id], config.context)
     >>> ShipmentIn.done([shipment.id], config.context)
     >>> config.user = account_user.id
-    >>> account_moves = AccountMoveLine.find([
+    >>> account_move_lines = AccountMoveLine.find([
     ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
     ...     ('account', '=', pending_payable.id),
     ...     ])
-    >>> len(account_moves)
+    >>> len(account_move_lines)
     1
     >>> sum([a.credit for a in account_moves])
     Decimal('600.00')
-    >>> account_moves = AccountMoveLine.find([
+    >>> account_move_lines = AccountMoveLine.find([
     ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
     ...     ('account.code', '=', 'E1'),
     ...     ])
-    >>> len(account_moves)
+    >>> len(account_move_lines)
     1
-    >>> sum([a.debit for a in account_moves])
+    >>> sum([a.debit for a in account_move_lines])
     Decimal('225.00')
-    >>> account_moves = AccountMoveLine.find([
+    >>> account_move_lines = AccountMoveLine.find([
     ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
     ...     ('account.code', '=', 'E2'),
     ...     ])
-    >>> len(account_moves)
+    >>> len(account_move_lines)
     1
-    >>> sum([a.debit for a in account_moves])
+    >>> sum([a.debit for a in account_move_lines])
     Decimal('375.00')
     >>> config.user = purchase_user.id
     >>> purchase.reload()
@@ -307,29 +307,29 @@ Validate Shipments::
     >>> ShipmentIn.receive([shipment.id], config.context)
     >>> ShipmentIn.done([shipment.id], config.context)
     >>> config.user = account_user.id
-    >>> account_moves = AccountMoveLine.find([
+    >>> account_move_lines = AccountMoveLine.find([
     ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
     ...     ('account', '=', pending_payable.id),
     ...     ])
-    >>> len(account_moves)
+    >>> len(account_move_lines)
     2
-    >>> sum([a.credit for a in account_moves])
+    >>> sum([a.credit for a in account_move_lines])
     Decimal('800.00')
-    >>> account_moves = AccountMoveLine.find([
+    >>> account_move_lines = AccountMoveLine.find([
     ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
     ...     ('account.code', '=', 'E1'),
     ...     ])
-    >>> len(account_moves)
+    >>> len(account_move_lines)
     2
-    >>> sum([a.debit for a in account_moves])
+    >>> sum([a.debit for a in account_move_lines])
     Decimal('300.00')
-    >>> account_moves = AccountMoveLine.find([
+    >>> account_move_lines = AccountMoveLine.find([
     ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
     ...     ('account.code', '=', 'E2'),
     ...     ])
-    >>> len(account_moves)
+    >>> len(account_move_lines)
     2
-    >>> sum([a.debit for a in account_moves])
+    >>> sum([a.debit for a in account_move_lines])
     Decimal('500.00')
     True
 
@@ -343,50 +343,50 @@ Open supplier invoices::
     >>> invoice1.invoice_date = today
     >>> invoice1.save()
     >>> Invoice.post([invoice1.id], config.context)
-    >>> account_moves = AccountMoveLine.find([
+    >>> account_move_lines = AccountMoveLine.find([
     ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
     ...     ('account', '=', pending_payable.id),
     ...     ('reconciliation', '=', None),
     ...     ])
-    >>> line, = account_moves
+    >>> line, = account_move_lines
     >>> line.credit
     Decimal('200.00')
     True
-    >>> account_moves = AccountMoveLine.find([
+    >>> account_move_lines = AccountMoveLine.find([
     ...     ('account.code', '=', 'E1'),
     ...     ])
-    >>> sum([a.debit - a.credit for a in account_moves])
+    >>> sum([a.debit - a.credit for a in account_move_lines])
     Decimal('300.00')
     True
-    >>> account_moves = AccountMoveLine.find([
+    >>> account_move_lines = AccountMoveLine.find([
     ...     ('account.code', '=', 'E2'),
     ...     ])
-    >>> sum([a.debit - a.credit for a in account_moves])
+    >>> sum([a.debit - a.credit for a in account_move_lines])
     Decimal('500.00')
     True
     >>> invoice2.invoice_date = today
     >>> invoice2.save()
     >>> Invoice.post([invoice2.id], config.context)
     >>> AccountMoveLine = Model.get('account.move.line')
-    >>> account_moves = AccountMoveLine.find([
+    >>> account_move_lines = AccountMoveLine.find([
     ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
     ...     ('account', '=', pending_payable.id),
     ...     ])
-    >>> sum(l.debit - l.credit for l in account_moves)
+    >>> sum(l.debit - l.credit for l in account_move_lines)
     Decimal('0.00')
     True
-    >>> all(a.reconciliation is not None for a in account_moves)
+    >>> all(a.reconciliation is not None for a in account_move_lines)
     True
-    >>> account_moves = AccountMoveLine.find([
+    >>> account_move_lines = AccountMoveLine.find([
     ...     ('account.code', '=', 'E1'),
     ...     ])
-    >>> sum([a.debit - a.credit for a in account_moves])
+    >>> sum([a.debit - a.credit for a in account_move_lines])
     Decimal('300.00')
     True
-    >>> account_moves = AccountMoveLine.find([
+    >>> account_move_lines = AccountMoveLine.find([
     ...     ('account.code', '=', 'E2'),
     ...     ])
-    >>> sum([a.debit - a.credit for a in account_moves])
+    >>> sum([a.debit - a.credit for a in account_move_lines])
     Decimal('500.00')
     True
 
@@ -455,6 +455,13 @@ Create a Return::
     >>> (len(return_.shipments), len(return_.shipment_returns),
     ...     len(return_.invoices))
     (0, 1, 0)
+    >>> config.user = account_user.id
+    >>> account_move_lines = AccountMoveLine.find([
+    ...     ('account', '=', pending_payable.id),
+    ...     ('origin', '=', 'purchase.purchase,' + str(return_.id)),
+    ...     ])
+    >>> len(account_move_lines)
+    0
 
 Check Return Shipments::
 
@@ -474,13 +481,13 @@ Check Return Shipments::
     >>> ShipmentReturn.done([ship_return.id], config.context)
     >>> ship_return.reload()
     >>> config.user = account_user.id
-    >>> account_moves = AccountMoveLine.find([
+    >>> account_move_lines = AccountMoveLine.find([
     ...     ('origin', '=', 'purchase.purchase,' + str(return_.id)),
     ...     ('account', '=', pending_payable.id),
     ...     ])
-    >>> len(account_moves)
+    >>> len(account_move_lines)
     1
-    >>> sum([a.debit for a in account_moves])
+    >>> sum([a.debit for a in account_move_lines])
     Decimal('60.00')
 
 Open customer credit note::
@@ -498,10 +505,10 @@ Open customer credit note::
     >>> credit_note.invoice_date = today
     >>> credit_note.save()
     >>> Invoice.post([credit_note.id], config.context)
-    >>> account_moves = AccountMoveLine.find([
+    >>> account_move_lines = AccountMoveLine.find([
     ...     ('reconciliation', '=', None),
     ...     ('origin', '=', 'purchase.purchase,' + str(return_.id)),
     ...     ('account', '=', pending_payable.id),
     ...     ])
-    >>> len(account_moves)
+    >>> len(account_move_lines)
     0

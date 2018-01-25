@@ -301,8 +301,8 @@ Validate Shipments::
     ...     ])
     >>> len(account_moves)
     2
-    >>> sum([a.credit for a in account_moves])
-    Decimal('800.00')
+    >>> sum([a.debit - a.credit for a in account_moves])
+    Decimal('-800.00')
     >>> account_moves = AccountMoveLine.find([
     ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
     ...     ('account.code', '=', 'E1'),
@@ -338,9 +338,8 @@ Open supplier invoices::
     ...     ('account', '=', pending_payable.id),
     ...     ('reconciliation', '=', None),
     ...     ])
-    >>> line, = account_moves
-    >>> line.credit
-    Decimal('200.00')
+    >>> sum([l.debit - l.credit for l in account_moves])
+    Decimal('-200.00')
     >>> account_moves = AccountMoveLine.find([
     ...     ('account.code', '=', 'E1'),
     ...     ])
