@@ -292,10 +292,10 @@ class PurchaseLine:
                 move_line.party = self.purchase.party
             move_line.purchase_line = self
             if unpending_amount < _ZERO:
-                move_line.credit = unpending_amount
+                move_line.credit = abs(unpending_amount)
                 move_line.debit = _ZERO
             else:
-                move_line.debit = abs(unpending_amount)
+                move_line.debit = unpending_amount
                 move_line.credit = _ZERO
             move_lines.append(move_line)
 
