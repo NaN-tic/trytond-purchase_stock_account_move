@@ -26,6 +26,7 @@ Imports::
     >>> from decimal import Decimal
     >>> from operator import attrgetter
     >>> from proteus import config, Model, Wizard
+    >>> from trytond.tests.tools import activate_modules
     >>> from trytond.modules.company.tests.tools import create_company, \
     ...     get_company
     >>> from trytond.modules.account.tests.tools import create_fiscalyear, \
@@ -34,17 +35,9 @@ Imports::
     ...     set_fiscalyear_invoice_sequences, create_payment_term
     >>> today = datetime.date.today()
 
-Create database::
+Activate purchase_stock_account_move::
 
-    >>> config = config.set_trytond()
-    >>> config.pool.test = True
-
-Install purchase::
-
-    >>> Module = Model.get('ir.module')
-    >>> module, = Module.find([('name', '=', 'purchase_stock_account_move')])
-    >>> module.click('install')
-    >>> Wizard('ir.module.install_upgrade').execute('upgrade')
+    >>> config = activate_modules('purchase_stock_account_move')
 
 Create company::
 
@@ -111,7 +104,6 @@ Create pending account and another expense account::
     >>> pending_payable.type = payable.type
     >>> pending_payable.kind = 'payable'
     >>> pending_payable.reconcile = True
-    >>> pending_payable.parent = payable.parent
     >>> pending_payable.save()
 
 Configure purchase to track pending_payables in accounting::
@@ -232,6 +224,8 @@ Purchase products::
     >>> len(purchase.moves), len(purchase.shipment_returns), len(purchase.invoices)
     (2, 0, 0)
     >>> config.user = account_user.id
+
+    >>> AccountMoveLine = Model.get('account.move.line')
     >>> moves = AccountMoveLine.find([
     ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
     ...     ('account', '=', pending_payable.id)
