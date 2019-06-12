@@ -7,14 +7,13 @@ from trytond.transaction import Transaction
 __all__ = ['Configuration', 'ConfigurationCompany']
 
 
-class Configuration:
-    __metaclass__ = PoolMeta
+class Configuration(metaclass=PoolMeta):
     __name__ = 'purchase.configuration'
 
     pending_invoice_account = fields.Function(fields.Many2One(
             'account.account', 'Pending Invoice Account', required=True,
             domain=[
-                ('kind', '!=', 'view'),
+                ('type', '!=', 'None'),
                 ]), 'get_company_config', 'set_company_config')
 
     @classmethod
@@ -65,5 +64,5 @@ class ConfigurationCompany(ModelSQL):
     pending_invoice_account = fields.Many2One('account.account',
         'Pending Invoice Account',
             domain=[
-                ('kind', '!=', 'view'),
+                ('type', '!=', 'None'),
                 ])

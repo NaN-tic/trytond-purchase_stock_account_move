@@ -30,7 +30,7 @@ Imports::
     >>> from trytond.modules.company.tests.tools import create_company, \
     ...     get_company
     >>> from trytond.modules.account.tests.tools import create_fiscalyear, \
-    ...     create_chart, get_accounts
+    ...     create_chart, get_accounts, create_tax
     >>> from trytond.modules.account_invoice.tests.tools import \
     ...     set_fiscalyear_invoice_sequences, create_payment_term
     >>> today = datetime.date.today()
@@ -123,11 +123,23 @@ Create parties::
     >>> customer = Party(name='Customer')
     >>> customer.save()
 
-Create category::
+Create tax::
+
+    >>> tax = create_tax(Decimal('.10'))
+    >>> tax.save()
+
+Create account categories::
 
     >>> ProductCategory = Model.get('product.category')
-    >>> category = ProductCategory(name='Category')
-    >>> category.save()
+    >>> account_category = ProductCategory(name="Account Category")
+    >>> account_category.accounting = True
+    >>> account_category.account_expense = expense
+    >>> account_category.account_revenue = revenue
+    >>> account_category.save()
+
+    >>> account_category_tax, = account_category.duplicate()
+    >>> account_category_tax.supplier_taxes.append(tax)
+    >>> account_category_tax.save()
 
 Create products::
 
@@ -138,34 +150,34 @@ Create products::
     >>> product1 = Product()
     >>> template1 = ProductTemplate()
     >>> template1.name = 'product'
-    >>> template1.category = category
+    >>> template1.account_category = account_category_tax
     >>> template1.default_uom = unit
     >>> template1.type = 'goods'
     >>> template1.purchasable = True
     >>> template1.salable = True
     >>> template1.list_price = Decimal('20')
-    >>> template1.cost_price = Decimal('15')
     >>> template1.cost_price_method = 'fixed'
     >>> template1.account_expense = expense
     >>> template1.account_revenue = revenue
     >>> template1.save()
     >>> product1.template = template1
+    >>> product1.cost_price = Decimal('10')
     >>> product1.save()
     >>> template2 = ProductTemplate()
     >>> template2.name = 'product'
-    >>> template2.category = category
+    >>> template2.account_category = account_category_tax
     >>> template2.default_uom = unit
     >>> template2.type = 'goods'
     >>> template2.purchasable = True
     >>> template2.salable = True
     >>> template2.list_price = Decimal('40')
-    >>> template2.cost_price = Decimal('25')
     >>> template2.cost_price_method = 'fixed'
     >>> template2.account_expense = expense
     >>> template2.account_revenue = revenue
     >>> template2.save()
     >>> product2 = Product()
     >>> product2.template = template2
+    >>> product2.cost_price = Decimal('20')
     >>> product2.save()
 
 Create payment term::
@@ -197,7 +209,7 @@ Create an Inventory::
     >>> inventory_line.save()
     >>> Inventory.confirm([inventory.id], config.context)
     >>> inventory.state
-    u'done'
+    'done'
 
 Purchase products::
 
@@ -217,9 +229,8 @@ Purchase products::
     >>> purchase_line.quantity = 5.0
     >>> purchase.click('quote')
     >>> purchase.click('confirm')
-    >>> purchase.click('process')
     >>> purchase.state
-    u'processing'
+    'processing'
     >>> purchase.reload()
     >>> len(purchase.moves), len(purchase.shipment_returns), len(purchase.invoices)
     (2, 0, 0)
@@ -253,36 +264,20 @@ Validate Shipments::
     >>> shipment.supplier = supplier
     >>> for move in moves:
     ...     incoming_move = Move(id=move.id)
-    ...     incoming_move.quantity = 15.0
+    ...     incoming_move.quantity=1
     ...     shipment.incoming_moves.append(incoming_move)
     >>> shipment.save()
-    >>> ShipmentIn.receive([shipment.id], config.context)
-    >>> ShipmentIn.done([shipment.id], config.context)
+    >>> shipment.click('receive')
+    >>> shipment.click('done')
     >>> config.user = account_user.id
     >>> account_moves = AccountMoveLine.find([
-    ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
+    ...     ('move_origin', '=', 'purchase.purchase,' + str(purchase.id)),
     ...     ('account', '=', pending_payable.id),
     ...     ])
     >>> len(account_moves)
-    1
+    2
     >>> sum([a.credit for a in account_moves])
-    Decimal('600.00')
-    >>> account_moves = AccountMoveLine.find([
-    ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
-    ...     ('account.code', '=', 'E1'),
-    ...     ])
-    >>> len(account_moves)
-    1
-    >>> sum([a.debit for a in account_moves])
-    Decimal('225.00')
-    >>> account_moves = AccountMoveLine.find([
-    ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
-    ...     ('account.code', '=', 'E2'),
-    ...     ])
-    >>> len(account_moves)
-    1
-    >>> sum([a.debit for a in account_moves])
-    Decimal('375.00')
+    Decimal('30.00')
     >>> config.user = purchase_user.id
     >>> purchase.reload()
     >>> moves = purchase.moves.find([('state', '=', 'draft')])
@@ -297,29 +292,13 @@ Validate Shipments::
     >>> ShipmentIn.done([shipment.id], config.context)
     >>> config.user = account_user.id
     >>> account_moves = AccountMoveLine.find([
-    ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
+    ...     ('move_origin', '=', 'purchase.purchase,' + str(purchase.id)),
     ...     ('account', '=', pending_payable.id),
     ...     ])
     >>> len(account_moves)
-    2
+    4
     >>> sum([a.credit for a in account_moves])
-    Decimal('800.00')
-    >>> account_moves = AccountMoveLine.find([
-    ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
-    ...     ('account.code', '=', 'E1'),
-    ...     ])
-    >>> len(account_moves)
-    2
-    >>> sum([a.debit for a in account_moves])
-    Decimal('300.00')
-    >>> account_moves = AccountMoveLine.find([
-    ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
-    ...     ('account.code', '=', 'E2'),
-    ...     ])
-    >>> len(account_moves)
-    2
-    >>> sum([a.debit for a in account_moves])
-    Decimal('500.00')
+    Decimal('150.00')
 
 Open supplier invoices::
 
@@ -332,29 +311,18 @@ Open supplier invoices::
     >>> invoice1.save()
     >>> Invoice.post([invoice1.id], config.context)
     >>> account_moves = AccountMoveLine.find([
-    ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
-    ...     ('account', '=', pending_payable.id),
-    ...     ('reconciliation', '=', None),
+    ...     ('move_origin', '=', 'purchase.purchase,' + str(purchase.id)),
+    ...     ('account', '=', pending_payable.id),    
     ...     ])
     >>> line, = account_moves
     >>> line.credit
-    Decimal('200.00')
-    >>> account_moves = AccountMoveLine.find([
-    ...     ('account.code', '=', 'E1'),
-    ...     ])
-    >>> sum([a.debit - a.credit for a in account_moves])
-    Decimal('300.00')
-    >>> account_moves = AccountMoveLine.find([
-    ...     ('account.code', '=', 'E2'),
-    ...     ])
-    >>> sum([a.debit - a.credit for a in account_moves])
-    Decimal('500.00')
+    Decimal('150.00')
     >>> invoice2.invoice_date = today
     >>> invoice2.save()
     >>> Invoice.post([invoice2.id], config.context)
     >>> AccountMoveLine = Model.get('account.move.line')
     >>> account_moves = AccountMoveLine.find([
-    ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
+    ...     ('move_origin', '=', 'purchase.purchase,' + str(purchase.id)),
     ...     ('account', '=', pending_payable.id),
     ...     ])
     >>> sum(l.debit - l.credit for l in account_moves)
@@ -385,9 +353,8 @@ Purchase products and invoice with diferent amount::
     >>> purchase_line.quantity = 20.0
     >>> purchase.click('quote')
     >>> purchase.click('confirm')
-    >>> purchase.click('process')
     >>> purchase.state
-    u'processing'
+    'processing'
     >>> purchase.reload()
     >>> len(purchase.moves), len(purchase.shipment_returns), len(purchase.invoices)
     (1, 0, 0)
@@ -430,9 +397,8 @@ Create a Return::
     >>> return_line.description = 'Comment'
     >>> return_.click('quote')
     >>> return_.click('confirm')
-    >>> return_.click('process')
     >>> return_.state
-    u'processing'
+    'processing'
     >>> return_.reload()
     >>> (len(return_.shipments), len(return_.shipment_returns),
     ...     len(return_.invoices))
@@ -445,10 +411,10 @@ Check Return Shipments::
     >>> config.user = stock_user.id
     >>> ShipmentReturn = Model.get('stock.shipment.in.return')
     >>> ship_return.state
-    u'waiting'
+    'waiting'
     >>> move_return, = ship_return.moves
     >>> move_return.product.rec_name
-    u'product'
+    'product'
     >>> move_return.quantity
     4.0
     >>> ShipmentReturn.assign_try([ship_return.id], config.context)
@@ -472,7 +438,7 @@ Open customer credit note::
     >>> credit_note, = return_.invoices
     >>> config.user = account_user.id
     >>> credit_note.type
-    u'in'
+    'in'
     >>> len(credit_note.lines)
     1
     >>> sum(l.quantity for l in credit_note.lines)
