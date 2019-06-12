@@ -2,7 +2,7 @@
 <!-- The COPYRIGHT file at the top level of this repository contains the full
      copyright notices and license terms. -->
 <data>
-    <xpath expr="/form/notebook/page/group[@name='analytic_accounts']"
+    <xpath expr="/form/notebook/page/[@id='analytic_accounts']"
             position="inside">
         <field name="analytic_required" invisible="1"/>
     </xpath>
