@@ -1,4 +1,4 @@
-#
+# 
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
@@ -7,16 +7,16 @@ msgid ""
 "There is no Pending Invoice Account Defined. Please define one in purchase "
 "configuration."
 msgstr ""
-"No s'ha trobat cap compte de factures pendents. Sisplau, definiu-n'hi una a "
-"la configuració de compres. "
+"No se ha encontrado una cuenta de facturas pendientes. Por favor, defina una"
+" en al configuración de compras."
 
 msgctxt "field:account.invoice.line,pending_in_invoice_account:"
 msgid "Pending Invoice Account"
-msgstr "Compte factures pendents"
+msgstr "Cuenta facturas pendientes"
 
 msgctxt "field:purchase.configuration,pending_invoice_account:"
 msgid "Pending Invoice Account"
-msgstr "Compte factures pendents"
+msgstr "Cuenta facturas pendientes"
 
 msgctxt "field:purchase.configuration.company,company:"
 msgid "Company"
@@ -24,32 +24,32 @@ msgstr "Empresa"
 
 msgctxt "field:purchase.configuration.company,create_date:"
 msgid "Create Date"
-msgstr "Data de creació"
+msgstr "Fecha de creación"
 
 msgctxt "field:purchase.configuration.company,create_uid:"
 msgid "Create User"
-msgstr "Usuari de creació"
+msgstr "Usuario de creación"
 
 msgctxt "field:purchase.configuration.company,id:"
 msgid "ID"
-msgstr "ID"
+msgstr "Identificador"
 
 msgctxt "field:purchase.configuration.company,pending_invoice_account:"
 msgid "Pending Invoice Account"
-msgstr "Compte factures pendents"
+msgstr "Cuenta facturas pendientes"
 
 msgctxt "field:purchase.configuration.company,rec_name:"
 msgid "Name"
-msgstr "Nom"
+msgstr "Nombre"
 
 msgctxt "field:purchase.configuration.company,write_date:"
 msgid "Write Date"
-msgstr "Data de modificació"
+msgstr "Fecha modificación"
 
 msgctxt "field:purchase.configuration.company,write_uid:"
 msgid "Write User"
-msgstr "Usuari de modificació"
+msgstr "Usuario modificación"
 
 msgctxt "model:purchase.configuration.company,name:"
 msgid "Purchase Configuration by Company"
-msgstr "Configuració de compres per empresa"
+msgstr "Cuenta facturas pendientes"
