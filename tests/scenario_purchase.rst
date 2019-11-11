@@ -102,7 +102,6 @@ Create pending account and another expense account::
     >>> pending_payable.code = 'PR'
     >>> pending_payable.name = 'Pending payable'
     >>> pending_payable.type = payable.type
-    >>> pending_payable.kind = 'payable'
     >>> pending_payable.reconcile = True
     >>> pending_payable.save()
 
@@ -110,7 +109,6 @@ Configure purchase to track pending_payables in accounting::
 
     >>> PurchaseConfig = Model.get('purchase.configuration')
     >>> purchase_config = PurchaseConfig(1)
-    >>> purchase_config.purchase_shipment_method = 'order'
     >>> purchase_config.purchase_invoice_method = 'shipment'
     >>> purchase_config.pending_invoice_account = pending_payable
     >>> purchase_config.save()
@@ -154,11 +152,8 @@ Create products::
     >>> template1.default_uom = unit
     >>> template1.type = 'goods'
     >>> template1.purchasable = True
-    >>> template1.salable = True
     >>> template1.list_price = Decimal('20')
     >>> template1.cost_price_method = 'fixed'
-    >>> template1.account_expense = expense
-    >>> template1.account_revenue = revenue
     >>> template1.save()
     >>> product1.template = template1
     >>> product1.cost_price = Decimal('10')
@@ -169,11 +164,8 @@ Create products::
     >>> template2.default_uom = unit
     >>> template2.type = 'goods'
     >>> template2.purchasable = True
-    >>> template2.salable = True
     >>> template2.list_price = Decimal('40')
     >>> template2.cost_price_method = 'fixed'
-    >>> template2.account_expense = expense
-    >>> template2.account_revenue = revenue
     >>> template2.save()
     >>> product2 = Product()
     >>> product2.template = template2
@@ -312,7 +304,7 @@ Open supplier invoices::
     >>> Invoice.post([invoice1.id], config.context)
     >>> account_moves = AccountMoveLine.find([
     ...     ('move_origin', '=', 'purchase.purchase,' + str(purchase.id)),
-    ...     ('account', '=', pending_payable.id),    
+    ...     ('account', '=', pending_payable.id),
     ...     ])
     >>> line, = account_moves
     >>> line.credit
