@@ -210,9 +210,11 @@ class PurchaseLine(metaclass=PoolMeta):
                     if line.origin == self:
                         quantity = Uom.compute_qty(line.unit, line.quantity,
                             self.unit)
-                        if event.type == 'in_invoice':
+                        if (event.type == 'in' and
+                                event.invoice_type_criteria() == '_invoice'):
                             unpending_quantity += quantity
-                        if event.type == 'in_credit_note':
+                        elif (event.type == 'in' and
+                                event.invoice_type_criteria() == '_credit_note'):
                             pending_quantity += quantity
 
         move_lines = MoveLine.search([
