@@ -194,43 +194,35 @@ class PurchaseLine(metaclass=PoolMeta):
             return []
 
         pending_quantity = 0
-        unpending_quantity = 0
         for event in events:
-            if isinstance(event, (StockShipmentIn,StockShipmentInReturn)):
+            if isinstance(event, (StockShipmentIn, StockShipmentInReturn)):
                 for move in event.moves:
                     if move.origin == self:
                         quantity = Uom.compute_qty(move.uom, move.quantity,
                             self.unit)
                         if isinstance(event, StockShipmentIn):
                             pending_quantity += quantity
-                        if isinstance(event, StockShipmentInReturn):
-                            unpending_quantity += quantity
+                        elif isinstance(event, StockShipmentInReturn):
+                            pending_quantity -= quantity
             if isinstance(event, AccountInvoice):
                 for line in event.lines:
                     if line.origin == self:
                         quantity = Uom.compute_qty(line.unit, line.quantity,
                             self.unit)
-                        if (event.type == 'in' and
-                                event.invoice_type_criteria() == '_invoice'):
-                            unpending_quantity += quantity
-                        elif (event.type == 'in' and
-                                event.invoice_type_criteria() == '_credit_note'):
-                            pending_quantity += quantity
+                        pending_quantity -= quantity
 
         move_lines = MoveLine.search([
                 ('purchase_line', '=', self),
                 ('account', '=', pending_invoice_account),
                 ('date', '=', date),
                 ])
-        recorded_pending_amount = sum(line.credit for line in move_lines)
-        recorded_unpending_amount = sum(line.debit for line in move_lines)
-
-        move_lines = []
-
+        recorded_pending_amount = sum(line.credit - line.debit for line in
+            move_lines)
         pending_amount = (Currency.compute(self.purchase.company.currency,
                 Decimal(pending_quantity) * self.unit_price,
                 self.purchase.currency) - recorded_pending_amount)
 
+        move_lines = []
         if pending_amount:
             move_line = MoveLine()
             move_line.account = self.product.account_expense_used
@@ -256,38 +248,6 @@ class PurchaseLine(metaclass=PoolMeta):
                 move_line.debit = _ZERO
             else:
                 move_line.debit = abs(pending_amount)
-                move_line.credit = _ZERO
-            move_lines.append(move_line)
-
-        unpending_amount = (Currency.compute(self.purchase.company.currency,
-                    Decimal(unpending_quantity) * self.unit_price,
-                    self.purchase.currency) - recorded_unpending_amount)
-
-        if unpending_amount:
-            move_line = MoveLine()
-            move_line.account = self.product.account_expense_used
-            if move_line.account.party_required:
-                move_line.party = self.purchase.party
-            move_line.purchase_line = self
-            if unpending_amount > _ZERO:
-                move_line.credit = unpending_amount
-                move_line.debit = _ZERO
-            else:
-                move_line.debit = abs(unpending_amount)
-                move_line.credit = _ZERO
-            self._set_analytic_lines(move_line)
-            move_lines.append(move_line)
-
-            move_line = MoveLine()
-            move_line.account = pending_invoice_account
-            if move_line.account.party_required:
-                move_line.party = self.purchase.party
-            move_line.purchase_line = self
-            if unpending_amount < _ZERO:
-                move_line.credit = abs(unpending_amount)
-                move_line.debit = _ZERO
-            else:
-                move_line.debit = unpending_amount
                 move_line.credit = _ZERO
             move_lines.append(move_line)
 
