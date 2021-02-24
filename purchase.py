@@ -61,8 +61,11 @@ class Purchase(metaclass=PoolMeta):
         events = {}
         for shipment in self.shipments:
             if shipment.state in ['received', 'done']:
-                date = shipment.effective_date or Date().today()
-                events.setdefault(date, []).append(shipment)
+                for move in shipment.incoming_moves:
+                    if move.state == 'done':
+                        date = move.effective_date
+                        events.setdefault(date, []).append(shipment)
+                        break
         for invoice in self.invoices:
             if invoice.state in ['posted', 'paid']:
                 accounting_date = (
