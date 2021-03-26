@@ -230,9 +230,9 @@ class PurchaseLine(metaclass=PoolMeta):
 
         move_lines = []
 
-        pending_amount = (Currency.compute(self.purchase.company.currency,
+        pending_amount = (Currency.compute(self.purchase.currency,
                 Decimal(pending_quantity) * self.unit_price,
-                self.purchase.currency) - recorded_pending_amount)
+                self.purchase.company.currency) - recorded_pending_amount)
 
         if pending_amount:
             move_line = MoveLine()
