@@ -9,8 +9,6 @@ from trytond.transaction import Transaction
 from trytond.i18n import gettext
 from trytond.exceptions import UserError
 
-__all__ = ['Move', 'MoveLine', 'Purchase', 'PurchaseLine',
-    'HandleShipmentException']
 _ZERO = Decimal('0.0')
 
 # Add sale_stock_account_move module depends temprally, becasue this module is
@@ -50,7 +48,6 @@ class Purchase(metaclass=PoolMeta):
         with lines related to Pending Invoices accounts.
         """
         pool = Pool()
-        Date = pool.get('ir.date')
         Config = pool.get('purchase.configuration')
         Move = pool.get('account.move')
         MoveLine = pool.get('account.move.line')

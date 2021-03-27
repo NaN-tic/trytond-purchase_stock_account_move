@@ -4,8 +4,6 @@ from trytond.model import Model, ModelSQL, fields
 from trytond.pool import Pool, PoolMeta
 from trytond.transaction import Transaction
 
-__all__ = ['Configuration', 'ConfigurationCompany']
-
 
 class Configuration(metaclass=PoolMeta):
     __name__ = 'purchase.configuration'
