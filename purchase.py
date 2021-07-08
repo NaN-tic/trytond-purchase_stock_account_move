@@ -147,21 +147,22 @@ class PurchaseLine(metaclass=PoolMeta):
             # Purchase Line not shipped
             return []
         quantities = {}
-        for move in self.moves:
-            if move.shipment and move.state == 'done':
-                quantity = Uom.compute_qty(
-                        move.uom, move.quantity, self.unit)
-                if move.to_location.type == 'supplier':
-                    quantity *= -1
-
-                if move.effective_date not in quantities:
-                    quantities[move.effective_date] = 0.0
-                quantities[move.effective_date] += quantity
-
         for invoice_line in self.invoice_lines:
+            if invoice_line in self.purchase.invoice_lines_ignored:
+                continue
+            if invoice_line.stock_moves:
+                accounting_date = invoice_line.stock_moves[0].effective_date
+            elif invoice_line.invoice:
+                accounting_date = invoice_line.invoice.invoice_date
+            else:
+                accounting_date = self.delivery_date
+            quantity = Uom.compute_qty(
+                    invoice_line.unit, invoice_line.quantity, self.unit)
+            if accounting_date not in quantities:
+                quantities[accounting_date] = 0.0
+            quantities[accounting_date] += quantity
             if ((invoice_line.invoice
-                    and invoice_line.invoice.state in ['posted', 'paid'])
-                    or invoice_line in self.purchase.invoice_lines_ignored):
+                    and invoice_line.invoice.state in ['posted', 'paid'])):
                 accounting_date = (
                     invoice_line.invoice.accounting_date
                     or invoice_line.invoice.invoice_date
