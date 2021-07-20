@@ -617,12 +617,12 @@ Execute wizard to ignore invoice line::
 
 Check account moves dates::
 
-    >>> sorted_moves = sorted(account_moves, key=lambda m: m.date)
+    >>> sorted_moves = sorted(account_moves, key=lambda m: (m.date, m.amount))
     >>> tomorrow = (today + datetime.timedelta(days=1)).strftime('%d/%m/%y')
     >>> past_tomorrow = (today + datetime.timedelta(days=2)).strftime('%d/%m/%y')
     >>> past_3_days = (today + datetime.timedelta(days=3)).strftime('%d/%m/%y')
     >>> got = [(move.date.strftime('%d/%m/%y'), move.debit - move.credit) for move in sorted_moves]
-    >>> expected = [(tomorrow, Decimal('500.00')),(tomorrow, Decimal('-500.00')),
+    >>> expected = [(tomorrow, Decimal('-500.00')),(tomorrow, Decimal('500.00')),
     ...     (past_tomorrow, Decimal('-500.00')), (past_tomorrow, Decimal('500.00')),
     ...     (past_3_days, Decimal('-500.00')), (past_3_days, Decimal('500.00')), ]
     >>> got == expected

@@ -155,7 +155,7 @@ class PurchaseLine(metaclass=PoolMeta):
             elif invoice_line.invoice:
                 accounting_date = invoice_line.invoice.invoice_date
             else:
-                accounting_date = self.delivery_date
+                accounting_date = self.delivery_date or self.purchase_date
             quantity = Uom.compute_qty(
                     invoice_line.unit, invoice_line.quantity, self.unit)
             if accounting_date not in quantities:
@@ -181,14 +181,14 @@ class PurchaseLine(metaclass=PoolMeta):
             ])
         for move_line in move_lines:
             if move_line.date not in amounts:
-                amounts[move_line.date] = Decimal(0)
+                amounts[move_line.date] = _ZERO
             amounts[move_line.date] += (move_line.credit - move_line.debit)
 
         moves = []
         for date in sorted(list(set(quantities.keys()) | set(amounts.keys()))):
             move_lines = []
             pending_quantity = quantities.get(date, 0.0)
-            recorded_pending_amount = amounts.get(date, Decimal(0))
+            recorded_pending_amount = amounts.get(date, _ZERO)
 
             with Transaction().set_context(date=date):
                 pending_amount = (Currency.compute(self.purchase.currency,
@@ -223,23 +223,13 @@ class PurchaseLine(metaclass=PoolMeta):
                     move_line.credit = _ZERO
                 move_lines.append(move_line)
             if move_lines:
-                period_id = Period.find(self.company.id, date=date,
-                    exception=False)
-                flag = False
-                if not period_id:
-                    period_id = Period.find(self.company.id, date=Date.today())
-                    move_date = Date.today()
-                    flag = True
-                else:
-                    move_date = date
+                period_id = Period.find(self.company.id, date=date)
                 move = AccountMove(
                     origin=self.purchase,
                     period=period_id,
                     journal=self.purchase._get_accounting_journal(),
-                    date=move_date,
+                    date=date,
                     lines=move_lines,)
-                if flag:
-                    move.description = 'X ' + str(date)
                 moves.append(move)
         return moves
 
