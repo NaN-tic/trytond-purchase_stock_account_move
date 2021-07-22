@@ -51,52 +51,18 @@ class Purchase(metaclass=PoolMeta):
         Config = pool.get('purchase.configuration')
         Move = pool.get('account.move')
         MoveLine = pool.get('account.move.line')
-
+        config = Config(1)
         if self.invoice_method != 'shipment':
             return
 
-        events = {}
-        for shipment in self.shipments:
-            if shipment.state in ['received', 'done']:
-                for move in shipment.incoming_moves:
-                    if move.state == 'done':
-                        date = move.effective_date
-                        events.setdefault(date, []).append(shipment)
-                        break
-        for invoice in self.invoices:
-            if invoice.state in ['posted', 'paid']:
-                accounting_date = (
-                    invoice.accounting_date or invoice.invoice_date
-                    )
-                events.setdefault(accounting_date, []).append(invoice)
-        for shipment_return in self.shipment_returns:
-            if shipment_return.state == 'done':
-                events.setdefault(
-                    shipment_return.effective_date,
-                    [],
-                    ).append(shipment_return)
-
-        sorted_events = []
-        for date in sorted(events):
-            sorted_events.append([date, events[date]])
-
-        config = Config(1)
-        if not config.pending_invoice_account:
-            raise UserError(gettext(
-                'purchase_stock_account_move.no_pending_invoice_account'))
-
         with Transaction().set_context(_check_access=False):
             account_moves = []
-            for date, events in sorted_events:
-                account_move = self._get_stock_account_move(
-                    config.pending_invoice_account, date, events)
-                if account_move is not None:
-                    account_moves.append(account_move)
-            if account_moves:
-                for account_move in account_moves:
-                    account_move.save()
-                Move.post(account_moves)
+            account_moves = self._get_stock_account_move(
+                    config.pending_invoice_account)
 
+            if account_moves:
+                Move.save(account_moves)
+                Move.post(account_moves)
                 to_reconcile = MoveLine.search([
                             ('move.origin', '=', str(self)),
                             ('account', '=', config.pending_invoice_account),
@@ -107,30 +73,17 @@ class Purchase(metaclass=PoolMeta):
                 if to_reconcile and credit == debit:
                     MoveLine.reconcile(to_reconcile)
 
-    def _get_stock_account_move(self, pending_invoice_account, date, events):
+    def _get_stock_account_move(self, pending_invoice_account):
         "Return the account move for shipped quantities"
-        pool = Pool()
-        Move = pool.get('account.move')
-        Period = pool.get('account.period')
 
         if self.invoice_method in ['manual', 'order']:
             return
-
-        move_lines = []
+        account_moves = []
         for line in self.lines:
-            move_lines += line._get_stock_account_move_lines(
-                pending_invoice_account, date, events)
-        if not move_lines:
-            return
-
-        period_id = Period.find(self.company.id, date=date)
-        return Move(
-            origin=self,
-            period=period_id,
-            journal=self._get_accounting_journal(),
-            date=date,
-            lines=move_lines,
-            )
+            line_moves = line._get_stock_account_move_lines(
+                pending_invoice_account)
+            account_moves.extend(line_moves)
+        return account_moves
 
     def _get_accounting_journal(self):
         pool = Pool()
@@ -174,84 +127,109 @@ class PurchaseLine(metaclass=PoolMeta):
             return True
         return False
 
-    def _get_stock_account_move_lines(self, pending_invoice_account, date,
-            events):
+    def _get_stock_account_move_lines(self, pending_invoice_account):
         """
         Return the account move lines for shipped quantities and
         to reconcile shipped and invoiced (and posted) quantities
         """
         pool = Pool()
-        StockShipmentIn = pool.get('stock.shipment.in')
-        AccountInvoice = pool.get('account.invoice')
-        StockShipmentInReturn = pool.get('stock.shipment.in.return')
         Uom = pool.get('product.uom')
-        MoveLine = pool.get('account.move.line')
+        AccountMoveLine = pool.get('account.move.line')
+        AccountMove = pool.get('account.move')
         Currency = pool.get('currency.currency')
+        Period = pool.get('account.period')
+        Date = pool.get('ir.date')
 
         if (not self.product or self.product.type == 'service' or
                 not self.moves):
             # Purchase Line not shipped
             return []
-
-        pending_quantity = 0
-        for event in events:
-            if isinstance(event, (StockShipmentIn, StockShipmentInReturn)):
-                for move in event.moves:
-                    if move.origin == self:
-                        quantity = Uom.compute_qty(move.uom, move.quantity,
-                            self.unit)
-                        if isinstance(event, StockShipmentIn):
-                            pending_quantity += quantity
-                        elif isinstance(event, StockShipmentInReturn):
-                            pending_quantity -= quantity
-            if isinstance(event, AccountInvoice):
-                for line in event.lines:
-                    if line.origin == self:
-                        quantity = Uom.compute_qty(line.unit, line.quantity,
-                            self.unit)
-                        pending_quantity -= quantity
-
-        move_lines = MoveLine.search([
-                ('purchase_line', '=', self),
-                ('account', '=', pending_invoice_account),
-                ('date', '=', date),
-                ])
-        recorded_pending_amount = sum(line.credit - line.debit for line in
-            move_lines)
-        pending_amount = (Currency.compute(self.purchase.currency,
-                Decimal(pending_quantity) * self.unit_price,
-                self.purchase.company.currency) - recorded_pending_amount)
-
-        move_lines = []
-        if pending_amount:
-            move_line = MoveLine()
-            move_line.account = self.product.account_expense_used
-            if move_line.account.party_required:
-                move_line.party = self.purchase.party
-            move_line.purchase_line = self
-            if pending_amount < _ZERO:
-                move_line.credit = abs(pending_amount)
-                move_line.debit = _ZERO
+        quantities = {}
+        for invoice_line in self.invoice_lines:
+            if invoice_line in self.purchase.invoice_lines_ignored:
+                continue
+            if invoice_line.stock_moves:
+                accounting_date = invoice_line.stock_moves[0].effective_date
+            elif invoice_line.invoice:
+                accounting_date = invoice_line.invoice.invoice_date
             else:
-                move_line.debit = pending_amount
-                move_line.credit = _ZERO
-            self._set_analytic_lines(move_line)
-            move_lines.append(move_line)
+                accounting_date = self.delivery_date or self.purchase_date
+            quantity = Uom.compute_qty(
+                    invoice_line.unit, invoice_line.quantity, self.unit)
+            if accounting_date not in quantities:
+                quantities[accounting_date] = 0.0
+            quantities[accounting_date] += quantity
+            if ((invoice_line.invoice
+                    and invoice_line.invoice.state in ['posted', 'paid'])):
+                accounting_date = (
+                    invoice_line.invoice.accounting_date
+                    or invoice_line.invoice.invoice_date
+                    or invoice_line.invoice.write_date.date()
+                    )
+                quantity = Uom.compute_qty(
+                        invoice_line.unit, invoice_line.quantity, self.unit)
+                if accounting_date not in quantities:
+                    quantities[accounting_date] = 0.0
+                quantities[accounting_date] -= quantity
 
-            move_line = MoveLine()
-            move_line.account = pending_invoice_account
-            if move_line.account.party_required:
-                move_line.party = self.purchase.party
-            move_line.purchase_line = self
-            if pending_amount > _ZERO:
-                move_line.credit = pending_amount
-                move_line.debit = _ZERO
-            else:
-                move_line.debit = abs(pending_amount)
-                move_line.credit = _ZERO
-            move_lines.append(move_line)
+        amounts = {}
+        move_lines = AccountMoveLine.search([
+            ('purchase_line', '=', self),
+            ('account', '=', pending_invoice_account),
+            ])
+        for move_line in move_lines:
+            if move_line.date not in amounts:
+                amounts[move_line.date] = _ZERO
+            amounts[move_line.date] += (move_line.credit - move_line.debit)
 
-        return move_lines
+        moves = []
+        for date in sorted(list(set(quantities.keys()) | set(amounts.keys()))):
+            move_lines = []
+            pending_quantity = quantities.get(date, 0.0)
+            recorded_pending_amount = amounts.get(date, _ZERO)
+
+            with Transaction().set_context(date=date):
+                pending_amount = (Currency.compute(self.purchase.currency,
+                        Decimal(pending_quantity) * self.unit_price,
+                        self.purchase.company.currency) - recorded_pending_amount)
+
+            if pending_amount:
+                move_line = AccountMoveLine()
+                move_line.account = self.product.account_expense_used
+                if move_line.account.party_required:
+                    move_line.party = self.purchase.party
+                move_line.purchase_line = self
+                if pending_amount < _ZERO:
+                    move_line.credit = abs(pending_amount)
+                    move_line.debit = _ZERO
+                else:
+                    move_line.debit = pending_amount
+                    move_line.credit = _ZERO
+                self._set_analytic_lines(move_line)
+                move_lines.append(move_line)
+
+                move_line = AccountMoveLine()
+                move_line.account = pending_invoice_account
+                if move_line.account.party_required:
+                    move_line.party = self.purchase.party
+                move_line.purchase_line = self
+                if pending_amount > _ZERO:
+                    move_line.credit = pending_amount
+                    move_line.debit = _ZERO
+                else:
+                    move_line.debit = abs(pending_amount)
+                    move_line.credit = _ZERO
+                move_lines.append(move_line)
+            if move_lines:
+                period_id = Period.find(self.company.id, date=date)
+                move = AccountMove(
+                    origin=self.purchase,
+                    period=period_id,
+                    journal=self.purchase._get_accounting_journal(),
+                    date=date,
+                    lines=move_lines,)
+                moves.append(move)
+        return moves
 
     def _set_analytic_lines(self, move_line):
         """
