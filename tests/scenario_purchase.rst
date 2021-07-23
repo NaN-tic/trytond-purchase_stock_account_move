@@ -33,6 +33,7 @@ Imports::
     ...     create_chart, get_accounts, create_tax
     >>> from trytond.modules.account_invoice.tests.tools import \
     ...     set_fiscalyear_invoice_sequences, create_payment_term
+    >>> from trytond.modules.stock.exceptions import MoveFutureWarning
     >>> today = datetime.date.today()
 
 Activate purchase_stock_account_move::
@@ -489,7 +490,27 @@ Create new purchase, shipment and invoice::
     ...     shipment.incoming_moves.append(incoming_move)
     >>> shipment.effective_date = today + datetime.timedelta(days=1)
     >>> shipment.save()
+    >>> try:
+    ...   shipment.click('receive')
+    ... except MoveFutureWarning as warning:
+    ...   _, (key, *_) = warning.args
+    ...   raise  # doctest: +IGNORE_EXCEPTION_DETAIL
+    Traceback (most recent call last):
+      ...
+    MoveFutureWarning: ...
+    >>> Warning = Model.get('res.user.warning')
+    >>> Warning(user=config.user, name=key).save()
     >>> shipment.click('receive')
+
+    >>> try:
+    ...   shipment.click('done')
+    ... except MoveFutureWarning as warning:
+    ...   _, (key, *_) = warning.args
+    ...   raise  # doctest: +IGNORE_EXCEPTION_DETAIL
+    Traceback (most recent call last):
+      ...
+    MoveFutureWarning: ...
+    >>> Warning(user=config.user, name=key).save()
     >>> shipment.click('done')
 
     >>> set_user(account_user)
