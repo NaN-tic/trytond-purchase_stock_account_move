@@ -6,8 +6,6 @@ from trytond.model import fields
 from trytond.pool import Pool, PoolMeta
 from trytond.pyson import Eval
 from trytond.transaction import Transaction
-from trytond.i18n import gettext
-from trytond.exceptions import UserError
 
 _ZERO = Decimal('0.0')
 
@@ -138,7 +136,6 @@ class PurchaseLine(metaclass=PoolMeta):
         AccountMove = pool.get('account.move')
         Currency = pool.get('currency.currency')
         Period = pool.get('account.period')
-        Date = pool.get('ir.date')
 
         if (not self.product or self.product.type == 'service' or
                 not self.moves):
