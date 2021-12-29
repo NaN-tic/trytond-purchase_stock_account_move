@@ -35,6 +35,7 @@ Imports::
     ...     set_fiscalyear_invoice_sequences, create_payment_term
     >>> from trytond.modules.stock.exceptions import MoveFutureWarning
     >>> today = datetime.date.today()
+    >>> next_year = datetime.date.today() + relativedelta(years=1, month=1, day=1)
 
 Activate purchase_stock_account_move::
 
@@ -83,6 +84,9 @@ Create fiscal year::
     >>> fiscalyear = set_fiscalyear_invoice_sequences(
     ...     create_fiscalyear(company))
     >>> fiscalyear.click('create_period')
+    >>> fiscalyear2 = set_fiscalyear_invoice_sequences(
+    ...     create_fiscalyear(company, today=next_year))
+    >>> fiscalyear2.click('create_period')
 
 Create chart of accounts::
 
