@@ -58,7 +58,7 @@ class ConfigurationCompany(ModelSQL):
     __name__ = 'purchase.configuration.company'
 
     company = fields.Many2One('company.company', 'Company', required=True,
-        ondelete='CASCADE', select=True)
+        ondelete='CASCADE')
     pending_invoice_account = fields.Many2One('account.account',
         'Pending Invoice Account',
             domain=[
