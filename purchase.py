@@ -1,7 +1,7 @@
 # The COPYRIGHT file at the top level of this repository contains the full
 # copyright notices and license terms.
 from decimal import Decimal
-
+from datetime import datetime
 from trytond.model import fields
 from trytond.pool import Pool, PoolMeta
 from trytond.pyson import Eval
@@ -141,6 +141,7 @@ class PurchaseLine(metaclass=PoolMeta):
                 not self.moves):
             # Purchase Line not shipped
             return []
+
         quantities = {}
         for invoice_line in self.invoice_lines:
             if invoice_line in self.purchase.invoice_lines_ignored:
@@ -175,9 +176,10 @@ class PurchaseLine(metaclass=PoolMeta):
             ('account', '=', pending_invoice_account),
             ])
         for move_line in move_lines:
-            if move_line.date not in amounts:
-                amounts[move_line.date] = _ZERO
-            amounts[move_line.date] += (move_line.credit - move_line.debit)
+            move_line_date =  move_line.date or datetime.max.date()
+            if move_line_date not in amounts:
+                amounts[move_line_date] = _ZERO
+            amounts[move_line_date] += (move_line.credit - move_line.debit)
 
         moves = []
         for date in sorted(list(set(quantities.keys()) | set(amounts.keys()))):
