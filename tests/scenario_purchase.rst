@@ -421,7 +421,6 @@ Check Return Shipments::
     >>> move_return.quantity
     4.0
     >>> ShipmentReturn.assign_try([ship_return.id], config.context)
-    True
     >>> ShipmentReturn.done([ship_return.id], config.context)
     >>> ship_return.reload()
 
