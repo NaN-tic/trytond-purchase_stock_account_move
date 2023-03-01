@@ -240,21 +240,17 @@ class PurchaseLine(metaclass=PoolMeta):
 
         if (not getattr(self, 'analytic_accounts', False) or
                 not self.analytic_accounts):
-            return []
+            return
 
         AnalyticLine = pool.get('analytic_account.line')
         move_line.analytic_lines = []
         for account in self.analytic_accounts:
             line = AnalyticLine()
             move_line.analytic_lines += (line,)
-            line.name = self.description
             line.debit = move_line.debit
             line.credit = move_line.credit
             line.account = account.account
-            line.journal = self.purchase._get_accounting_journal()
             line.date = Date.today()
-            line.reference = self.purchase.reference
-            line.party = self.purchase.party
 
 
 class HandleShipmentException(metaclass=PoolMeta):
