@@ -215,12 +215,14 @@ Purchase products::
     >>> purchase_line = purchase.lines.new()
     >>> purchase_line.product = product1
     >>> purchase_line.quantity = 5.0
+    >>> purchase_line.unit_price = product1.cost_price
     >>> purchase_line = purchase.lines.new()
     >>> purchase_line.type = 'comment'
     >>> purchase_line.description = 'Comment'
     >>> purchase_line = purchase.lines.new()
     >>> purchase_line.product = product2
     >>> purchase_line.quantity = 5.0
+    >>> purchase_line.unit_price = product2.cost_price
     >>> purchase.click('quote')
     >>> purchase.click('confirm')
     >>> purchase.state
@@ -348,6 +350,7 @@ Purchase products and invoice with diferent amount::
     >>> purchase_line = purchase.lines.new()
     >>> purchase_line.product = product1
     >>> purchase_line.quantity = 20.0
+    >>> purchase_line.unit_price = product1.cost_price
     >>> purchase.click('quote')
     >>> purchase.click('confirm')
     >>> purchase.state
@@ -394,6 +397,7 @@ Create a Return::
     >>> return_line = return_.lines.new()
     >>> return_line.product = product1
     >>> return_line.quantity = -4.
+    >>> return_line.unit_price = product1.cost_price
     >>> return_line = return_.lines.new()
     >>> return_line.type = 'comment'
     >>> return_line.description = 'Comment'
@@ -474,6 +478,7 @@ Create new purchase, shipment and invoice::
     >>> purchase_line = purchase.lines.new()
     >>> purchase_line.product = product1
     >>> purchase_line.quantity = 50.0
+    >>> purchase_line.unit_price = product1.cost_price
     >>> purchase.click('quote')
     >>> purchase.click('confirm')
     >>> purchase.state
