@@ -507,7 +507,7 @@ Create new purchase, shipment and invoice::
       ...
     MoveFutureWarning: ...
     >>> Warning = Model.get('res.user.warning')
-    >>> Warning(user=config.user, name=key).save()
+    >>> Warning.skip(key, True, config.context)
     >>> shipment.click('receive')
 
     >>> try:
@@ -518,9 +518,8 @@ Create new purchase, shipment and invoice::
     Traceback (most recent call last):
       ...
     MoveFutureWarning: ...
-    >>> Warning(user=config.user, name=key).save()
+    >>> Warning.skip(key, True, config.context)
     >>> shipment.click('done')
-
     >>> set_user(account_user)
     >>> account_moves = AccountMoveLine.find([
     ...     ('move_origin', '=', 'purchase.purchase,' + str(purchase.id)),
