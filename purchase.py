@@ -151,7 +151,10 @@ class PurchaseLine(metaclass=PoolMeta):
             elif invoice_line.invoice:
                 accounting_date = invoice_line.invoice.invoice_date
             else:
-                accounting_date = self.delivery_date or self.purchase_date
+                accounting_date = self.delivery_date or self.purchase.purchase_date
+            if not accounting_date:
+                continue
+
             quantity = Uom.compute_qty(
                     invoice_line.unit, invoice_line.quantity, self.unit)
             if accounting_date not in quantities:
