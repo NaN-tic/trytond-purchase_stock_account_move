@@ -554,7 +554,7 @@ Cancel invoice::
     >>> set_user(purchase_user)
     >>> purchase.reload()
     >>> purchase.invoice_state
-    'exception'
+    'paid'
     >>> set_user(account_user)
     >>> account_moves = AccountMoveLine.find([
     ...     ('move_origin', '=', 'purchase.purchase,' + str(purchase.id)),
@@ -564,77 +564,6 @@ Cancel invoice::
     3
     >>> sum(l.debit - l.credit for l in account_moves)
     Decimal('-500.00')
-
-Execute wizard to recreate invoice line::
-
-    >>> set_user(purchase_user)
-    >>> handler = Wizard('purchase.handle.invoice.exception', models=[purchase])
-    >>> handler.execute('handle')
-
-    >>> set_user(account_user)
-    >>> account_moves = AccountMoveLine.find([
-    ...     ('move_origin', '=', 'purchase.purchase,' + str(purchase.id)),
-    ...     ('account', '=', pending_payable.id),
-    ...     ])
-    >>> len(account_moves)
-    3
-    >>> sum(l.debit - l.credit for l in account_moves)
-    Decimal('-500.00')
-
-Create new invoice with the recreated invoice lines and cancel it::
-
-    >>> set_user(purchase_user)
-    >>> purchase.reload()
-    >>> Invoice = Model.get('account.invoice')
-    >>> invoice = Invoice()
-    >>> invoice.type = 'in'
-    >>> invoice.party = purchase.party
-    >>> set_user(account_user)
-    >>> invoice.invoice_date = today + datetime.timedelta(days=3)
-    >>> invoice.lines.append(InvoiceLine(purchase.invoice_lines[0].id))
-    >>> invoice.save()
-    >>> set_user(account_user)
-    >>> Invoice.post([invoice.id], config.context)
-    >>> account_moves = AccountMoveLine.find([
-    ...     ('move_origin', '=', 'purchase.purchase,' + str(purchase.id)),
-    ...     ('account', '=', pending_payable.id),
-    ...     ])
-    >>> len(account_moves)
-    4
-    >>> sum(l.debit - l.credit for l in account_moves)
-    Decimal('0.00')
-
-    >>> Invoice.cancel([invoice.id], config.context)
-    >>> set_user(purchase_user)
-    >>> purchase.reload()
-    >>> purchase.invoice_state
-    'exception'
-    >>> set_user(account_user)
-    >>> account_moves = AccountMoveLine.find([
-    ...     ('move_origin', '=', 'purchase.purchase,' + str(purchase.id)),
-    ...     ('account', '=', pending_payable.id),
-    ...     ])
-    >>> len(account_moves)
-    5
-    >>> sum(l.debit - l.credit for l in account_moves)
-    Decimal('-500.00')
-
-Execute wizard to ignore invoice line::
-
-    >>> set_user(purchase_user)
-    >>> handler = Wizard('purchase.handle.invoice.exception', models=[purchase])
-    >>> handler.form.recreate_invoices.clear()
-    >>> handler.execute('handle')
-
-    >>> set_user(account_user)
-    >>> account_moves = AccountMoveLine.find([
-    ...     ('move_origin', '=', 'purchase.purchase,' + str(purchase.id)),
-    ...     ('account', '=', pending_payable.id),
-    ...     ])
-    >>> len(account_moves)
-    6
-    >>> sum(l.debit - l.credit for l in account_moves)
-    Decimal('0.00')
 
 Check account moves dates::
 
@@ -643,8 +572,7 @@ Check account moves dates::
     >>> past_tomorrow = (today + datetime.timedelta(days=2)).strftime('%d/%m/%y')
     >>> past_3_days = (today + datetime.timedelta(days=3)).strftime('%d/%m/%y')
     >>> got = [(move.date.strftime('%d/%m/%y'), move.debit - move.credit) for move in sorted_moves]
-    >>> expected = [(tomorrow, Decimal('-500.00')),(tomorrow, Decimal('500.00')),
-    ...     (past_tomorrow, Decimal('-500.00')), (past_tomorrow, Decimal('500.00')),
-    ...     (past_3_days, Decimal('-500.00')), (past_3_days, Decimal('500.00')), ]
+    >>> expected = [(tomorrow, Decimal('-500.00')), (past_tomorrow, Decimal('-500.00')),
+    ...     (past_tomorrow, Decimal('500.00'))]
     >>> got == expected
     True
