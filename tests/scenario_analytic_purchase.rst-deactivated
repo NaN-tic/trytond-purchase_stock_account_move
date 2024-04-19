@@ -260,7 +260,7 @@ Validate Shipments::
     ...     shipment.incoming_moves.append(incoming_move)
     >>> shipment.save()
     >>> ShipmentIn.receive([shipment.id], config.context)
-    >>> ShipmentIn.done([shipment.id], config.context)
+    >>> ShipmentIn.do([shipment.id], config.context)
     >>> config.user = account_user.id
     >>> account_moves = AccountMoveLine.find([
     ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),
@@ -300,7 +300,7 @@ Validate Shipments::
     ...     shipment.incoming_moves.append(incoming_move)
     >>> shipment.save()
     >>> ShipmentIn.receive([shipment.id], config.context)
-    >>> ShipmentIn.done([shipment.id], config.context)
+    >>> ShipmentIn.do([shipment.id], config.context)
     >>> config.user = account_user.id
     >>> account_moves = AccountMoveLine.find([
     ...     ('origin', '=', 'purchase.purchase,' + str(purchase.id)),

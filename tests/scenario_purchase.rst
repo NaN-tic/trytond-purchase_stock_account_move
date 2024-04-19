@@ -264,7 +264,7 @@ Validate Shipments::
     ...     shipment.incoming_moves.append(incoming_move)
     >>> shipment.save()
     >>> shipment.click('receive')
-    >>> shipment.click('done')
+    >>> shipment.click('do')
 
     >>> set_user(account_user)
     >>> account_moves = AccountMoveLine.find([
@@ -288,7 +288,7 @@ Validate Shipments::
     ...     shipment.incoming_moves.append(incoming_move)
     >>> shipment.save()
     >>> ShipmentIn.receive([shipment.id], config.context)
-    >>> ShipmentIn.done([shipment.id], config.context)
+    >>> ShipmentIn.do([shipment.id], config.context)
 
     >>> set_user(account_user)
     >>> account_moves = AccountMoveLine.find([
@@ -370,7 +370,7 @@ Purchase products and invoice with diferent amount::
     ...     shipment.incoming_moves.append(incoming_move)
     >>> shipment.save()
     >>> ShipmentIn.receive([shipment.id], config.context)
-    >>> ShipmentIn.done([shipment.id], config.context)
+    >>> ShipmentIn.do([shipment.id], config.context)
 
     >>> set_user(purchase_user)
     >>> purchase.reload()
@@ -425,7 +425,7 @@ Check Return Shipments::
     >>> move_return.quantity
     4.0
     >>> ShipmentReturn.assign_try([ship_return.id], config.context)
-    >>> ShipmentReturn.done([ship_return.id], config.context)
+    >>> ShipmentReturn.do([ship_return.id], config.context)
     >>> ship_return.reload()
 
     >>> set_user(account_user)
@@ -511,7 +511,7 @@ Create new purchase, shipment and invoice::
     >>> shipment.click('receive')
 
     >>> try:
-    ...   shipment.click('done')
+    ...   shipment.click('do')
     ... except MoveFutureWarning as warning:
     ...   _, (key, *_) = warning.args
     ...   raise  # doctest: +IGNORE_EXCEPTION_DETAIL
@@ -519,7 +519,7 @@ Create new purchase, shipment and invoice::
       ...
     MoveFutureWarning: ...
     >>> Warning.skip(key, True, config.context)
-    >>> shipment.click('done')
+    >>> shipment.click('do')
     >>> set_user(account_user)
     >>> account_moves = AccountMoveLine.find([
     ...     ('move_origin', '=', 'purchase.purchase,' + str(purchase.id)),
