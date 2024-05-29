@@ -7,7 +7,7 @@ from trytond.pool import Pool, PoolMeta
 from trytond.pyson import Eval
 from trytond.transaction import Transaction
 
-_ZERO = Decimal('0.0')
+_ZERO = Decimal(0)
 
 # Add sale_stock_account_move module depends temprally, becasue this module is
 #   used only by one client. If it's used by another client we will need to
