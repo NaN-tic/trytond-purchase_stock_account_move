@@ -555,7 +555,11 @@ class Test(unittest.TestCase):
         # Execute wizard to recreate invoice line
         set_user(purchase_user)
         handler = Wizard('purchase.handle.invoice.exception', models=[purchase])
+        handler.form.recreate_invoices.extend(handler.form.recreate_invoices.find())
         handler.execute('handle')
+        purchase.reload()
+        self.assertEqual(len(purchase.invoices_recreated), 1)
+
         set_user(account_user)
         account_moves = AccountMoveLine.find([
             ('move_origin', '=', 'purchase.purchase,' + str(purchase.id)),
@@ -569,16 +573,17 @@ class Test(unittest.TestCase):
         # Create new invoice with the recreated invoice lines and cancel it
         set_user(purchase_user)
         purchase.reload()
+
         Invoice = Model.get('account.invoice')
-        invoice = Invoice()
-        invoice.type = 'in'
-        invoice.party = purchase.party
+        InvoiceLine = Model.get('account.invoice.line')
+
+        invoice1, invoice2 = purchase.invoices
+        self.assertEqual((invoice1.state, invoice2.state), ('cancelled', 'draft'))
+
         set_user(account_user)
-        invoice.invoice_date = today + datetime.timedelta(days=3)
-        invoice.lines.append(InvoiceLine(purchase.invoice_lines[0].id))
-        invoice.save()
-        set_user(account_user)
-        Invoice.post([invoice.id], config.context)
+        invoice2.invoice_date = today + datetime.timedelta(days=3)
+        invoice2.save()
+        Invoice.post([invoice2.id], config.context)
         account_moves = AccountMoveLine.find([
             ('move_origin', '=', 'purchase.purchase,' + str(purchase.id)),
             ('account', '=', pending_payable.id),
@@ -586,7 +591,7 @@ class Test(unittest.TestCase):
         self.assertEqual(len(account_moves), 4)
         self.assertEqual(sum(l.debit - l.credit for l in account_moves),
                          Decimal('0.00'))
-        Invoice.cancel([invoice.id], config.context)
+        Invoice.cancel([invoice2.id], config.context)
         set_user(purchase_user)
         purchase.reload()
         self.assertEqual(purchase.invoice_state, 'paid')
