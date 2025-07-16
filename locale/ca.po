@@ -1,14 +1,6 @@
-# 
+#
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
-
-msgctxt "error:purchase.purchase:"
-msgid ""
-"There is no Pending Invoice Account Defined. Please define one in purchase "
-"configuration."
-msgstr ""
-"No s'ha trobat cap compte de factures pendents. Sisplau, definiu-n'hi una a "
-"la configuració de compres. "
 
 msgctxt "field:account.invoice.line,pending_in_invoice_account:"
 msgid "Pending Invoice Account"
