@@ -122,7 +122,7 @@ class Test(unittest.TestCase):
         # Configure purchase to track pending_payables in accounting
         PurchaseConfig = Model.get('purchase.configuration')
         purchase_config = PurchaseConfig(1)
-        purchase_config.purchase_invoice_method = 'shipment'
+        purchase_config.purchase_invoice_method = 'fulfillment'
         purchase_config.pending_invoice_account = pending_payable
         purchase_config.save()
 

@@ -50,7 +50,7 @@ class Purchase(metaclass=PoolMeta):
         Move = pool.get('account.move')
         MoveLine = pool.get('account.move.line')
         config = Config(1)
-        if self.invoice_method != 'shipment':
+        if self.invoice_method != 'fulfillment':
             return
 
         with Transaction().set_context(_check_access=False):
